@@ -54,11 +54,18 @@ const ChatArea = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
 `;
 
 const WelcomeCard = styled.div`
   text-align: center;
   padding: 40px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 `;
 
 const WelcomeDesc = styled.p`
@@ -96,6 +103,7 @@ const MessageList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
 `;
 
 const MessageGroup = styled.div<{ $isUser: boolean }>`

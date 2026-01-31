@@ -3,134 +3,281 @@ import styled from '@emotion/styled';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { v4 as uuidv4 } from 'uuid';
 import { useContactsStore } from '@/features/manage-contacts';
+import { useThemeStore } from '@/shared/stores/themeStore';
 import { Modal } from '@/shared/ui';
 
 const Container = styled.div`
   min-height: 100vh;
-  background: #f2f4f8;
+  background: var(--bg-primary);
+  transition: background-color 0.3s ease;
 `;
 
-const Header = styled.header`
-  padding: 32px 24px 24px;
+// Navigation
+const Nav = styled.nav`
+  position: sticky;
+  top: 0;
+  background: var(--bg-nav);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 100;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+`;
+
+const NavInner = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 `;
 
-const Title = styled.h1`
-  font-size: 22px;
+const Logo = styled.h1`
+  font-size: 20px;
   font-weight: 700;
-  color: #191f28;
+  color: var(--text-primary);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.3s ease;
 `;
 
-const AddButton = styled.button`
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: #3182f6;
-  border: none;
-  color: #fff;
-  font-size: 24px;
-  font-weight: 300;
+const LogoIcon = styled.div`
+  width: 32px;
+  height: 32px;
+  background: var(--accent-gradient);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(99, 91, 255, 0.3);
+`;
+
+const NavActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const ThemeToggle = styled.button`
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3);
+  transition: all 0.3s ease;
 
-  &:active {
-    transform: scale(0.95);
+  &:hover {
+    border-color: var(--border-color-hover);
+    transform: scale(1.05);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
   }
 `;
 
-const Section = styled.section`
-  padding: 0 16px;
+const NavButton = styled.button`
+  padding: 10px 20px;
+  background: var(--accent-gradient);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(99, 91, 255, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 91, 255, 0.4);
+  }
 `;
 
-const CardGrid = styled.div`
+// Hero Section - Centered
+const HeroSection = styled.section`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 24px 60px;
+  text-align: center;
+`;
+
+const HeroBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(90deg, rgba(99, 91, 255, 0.1) 0%, rgba(0, 115, 230, 0.1) 100%);
+  border-radius: 20px;
+  margin-bottom: 24px;
+`;
+
+const BadgeText = styled.span`
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+`;
+
+const HeroTitle = styled.h2`
+  font-size: 56px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 20px;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  transition: color 0.3s ease;
+
+  @media (max-width: 768px) {
+    font-size: 36px;
+    letter-spacing: -1px;
+  }
+`;
+
+const HeroDesc = styled.p`
+  font-size: 20px;
+  color: var(--text-secondary);
+  margin: 0 auto 48px;
+  line-height: 1.6;
+  max-width: 600px;
+  transition: color 0.3s ease;
+
+  @media (max-width: 768px) {
+    font-size: 17px;
+  }
+`;
+
+// Service Cards Grid - 2x2 Layout
+const ServiceGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 `;
 
-const Card = styled(Link)`
+const ServiceCard = styled(Link)`
+  background: var(--bg-card);
+  border-radius: 24px;
+  padding: 40px 32px 32px;
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 16px 24px;
-  background: #fff;
-  border-radius: 16px;
-  text-decoration: none;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  transition: transform 0.15s, box-shadow 0.15s;
+  text-align: center;
+  min-height: 200px;
 
-  &:active {
-    transform: scale(0.98);
+  &:hover {
+    transform: translateY(-12px);
+    box-shadow: var(--shadow-card-hover);
+    border-color: transparent;
   }
 `;
 
-const IconBox = styled.div`
-  width: 64px;
-  height: 64px;
+// 3D Icon Image - using local 3D icons with transparent background
+const IconImage = styled.img`
+  width: 120px;
+  height: 120px;
   margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: contain;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.15));
+
+  ${ServiceCard}:hover & {
+    transform: scale(1.15) translateY(-8px);
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.2));
+  }
 `;
 
-const CardTitle = styled.span`
-  font-size: 15px;
+const ServiceTitle = styled.h3`
+  font-size: 18px;
   font-weight: 600;
-  color: #191f28;
+  color: var(--text-primary);
+  margin: 0;
+  transition: color 0.3s ease;
+`;
+
+// Contacts Section
+const ContactsSection = styled.section`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 100px;
+`;
+
+const SectionHeader = styled.div`
   text-align: center;
+  max-width: 600px;
+  margin: 0 auto 40px;
 `;
 
-const CardDesc = styled.span`
-  font-size: 13px;
-  color: #8b95a1;
-  margin-top: 4px;
-  text-align: center;
-`;
-
-const ContactsSection = styled.div`
-  margin-top: 24px;
-  padding: 0 16px;
-`;
-
-const SectionLabel = styled.h2`
-  font-size: 15px;
+const SectionLabel = styled.div`
+  font-size: 14px;
   font-weight: 600;
-  color: #191f28;
-  padding: 0 8px;
-  margin: 0 0 12px;
+  color: var(--accent-primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+`;
+
+const SectionTitle = styled.h3`
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  transition: color 0.3s ease;
+`;
+
+const ContactsList = styled.div`
+  display: grid;
+  gap: 12px;
 `;
 
 const ContactCard = styled(Link)`
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 14px;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border-radius: 16px;
   text-decoration: none;
-  margin-bottom: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 4px 12px rgba(99, 91, 255, 0.1);
+    transform: translateX(4px);
+  }
 `;
 
 const ContactAvatar = styled.div`
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 
   svg {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
   }
 `;
 
@@ -140,41 +287,53 @@ const ContactInfo = styled.div`
 
 const ContactName = styled.span`
   display: block;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
-  color: #191f28;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
 `;
 
 const ContactMeta = styled.span`
-  font-size: 13px;
-  color: #8b95a1;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
 `;
 
+const ArrowIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2">
+    <path d="M9 18l6-6-6-6"/>
+  </svg>
+);
+
+// Modal Styles
 const InputLabel = styled.label`
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #6b7684;
+  color: var(--text-primary);
   margin-bottom: 8px;
+  transition: color 0.3s ease;
 `;
 
 const Input = styled.input`
   width: 100%;
-  padding: 16px;
-  border: 1px solid #e5e8eb;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: #fff;
+  background: var(--bg-card);
   font-size: 16px;
-  color: #191f28;
+  color: var(--text-primary);
   margin-bottom: 20px;
+  transition: all 0.3s ease;
 
   &:focus {
     outline: none;
-    border-color: #3182f6;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.1);
   }
 
   &::placeholder {
-    color: #adb5bd;
+    color: var(--text-tertiary);
   }
 `;
 
@@ -187,107 +346,64 @@ const MessengerGrid = styled.div`
 
 const MessengerBtn = styled.button<{ $active: boolean }>`
   padding: 14px;
-  background: ${props => props.$active ? '#f0f0f0' : '#f9fafb'};
-  border: 2px solid ${props => props.$active ? '#191f28' : 'transparent'};
+  background: ${props => props.$active ? 'var(--bg-secondary)' : 'var(--bg-card)'};
+  border: 2px solid ${props => props.$active ? 'var(--accent-primary)' : 'var(--border-color)'};
   border-radius: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s;
 
   svg {
     width: 36px;
     height: 36px;
+  }
+
+  &:hover {
+    border-color: ${props => props.$active ? 'var(--accent-primary)' : 'var(--border-color-hover)'};
   }
 `;
 
 const SubmitBtn = styled.button`
   width: 100%;
   padding: 16px;
-  background: #3182f6;
-  color: white;
+  background: var(--accent-gradient);
+  color: #fff;
   border: none;
-  border-radius: 12px;
+  border-radius: 28px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(99, 91, 255, 0.3);
 
   &:disabled {
-    background: #e5e8eb;
-    color: #adb5bd;
+    background: var(--border-color);
+    color: var(--text-tertiary);
+    box-shadow: none;
   }
 
-  &:active:not(:disabled) {
-    background: #1b64da;
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 91, 255, 0.4);
   }
 `;
 
-// 3D Style Icons
-const ChatIcon = () => (
-  <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-    <ellipse cx="32" cy="54" rx="20" ry="4" fill="#e8ebf0"/>
-    <rect x="10" y="12" width="44" height="36" rx="8" fill="#4da3ff"/>
-    <rect x="10" y="12" width="44" height="36" rx="8" fill="url(#chatGrad)"/>
-    <rect x="18" y="22" width="20" height="4" rx="2" fill="#fff" opacity="0.9"/>
-    <rect x="18" y="30" width="28" height="4" rx="2" fill="#fff" opacity="0.6"/>
-    <rect x="18" y="38" width="16" height="4" rx="2" fill="#fff" opacity="0.4"/>
-    <defs>
-      <linearGradient id="chatGrad" x1="10" y1="12" x2="54" y2="48">
-        <stop stopColor="#5eb3ff"/>
-        <stop offset="1" stopColor="#3b82f6"/>
-      </linearGradient>
-    </defs>
+// Icons
+const SunIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <circle cx="12" cy="12" r="5"/>
+    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
   </svg>
 );
 
-const TrainingIcon = () => (
-  <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-    <ellipse cx="32" cy="54" rx="20" ry="4" fill="#e8ebf0"/>
-    <path d="M32 8L10 20V36C10 46 20 54 32 58C44 54 54 46 54 36V20L32 8Z" fill="#20c997"/>
-    <path d="M32 8L10 20V36C10 46 20 54 32 58C44 54 54 46 54 36V20L32 8Z" fill="url(#shieldGrad)"/>
-    <path d="M26 32L30 36L40 26" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-    <defs>
-      <linearGradient id="shieldGrad" x1="10" y1="8" x2="54" y2="58">
-        <stop stopColor="#34d399"/>
-        <stop offset="1" stopColor="#10b981"/>
-      </linearGradient>
-    </defs>
+const MoonIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
   </svg>
 );
 
-const ImageIcon = () => (
-  <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-    <ellipse cx="32" cy="54" rx="20" ry="4" fill="#e8ebf0"/>
-    <rect x="8" y="10" width="48" height="38" rx="8" fill="#a855f7"/>
-    <rect x="8" y="10" width="48" height="38" rx="8" fill="url(#imgGrad)"/>
-    <circle cx="22" cy="24" r="6" fill="#fff" opacity="0.9"/>
-    <path d="M8 40L20 28L32 40L44 26L56 38V40C56 44.4 52.4 48 48 48H16C11.6 48 8 44.4 8 40Z" fill="#fff" opacity="0.4"/>
-    <defs>
-      <linearGradient id="imgGrad" x1="8" y1="10" x2="56" y2="48">
-        <stop stopColor="#c084fc"/>
-        <stop offset="1" stopColor="#a855f7"/>
-      </linearGradient>
-    </defs>
-  </svg>
-);
-
-const ProfileIcon = () => (
-  <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-    <ellipse cx="32" cy="54" rx="20" ry="4" fill="#e8ebf0"/>
-    <circle cx="32" cy="28" r="22" fill="#ff9500"/>
-    <circle cx="32" cy="28" r="22" fill="url(#profGrad)"/>
-    <circle cx="32" cy="22" r="8" fill="#fff" opacity="0.9"/>
-    <path d="M18 42C18 34 24 28 32 28C40 28 46 34 46 42" stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity="0.7"/>
-    <defs>
-      <linearGradient id="profGrad" x1="10" y1="6" x2="54" y2="50">
-        <stop stopColor="#ffb347"/>
-        <stop offset="1" stopColor="#ff9500"/>
-      </linearGradient>
-    </defs>
-  </svg>
-);
-
-// Messenger Icons
 const KakaoIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
     <rect width="48" height="48" rx="12" fill="#FEE500"/>
@@ -336,9 +452,43 @@ const messengers = [
   { id: 'facebook', name: '페이스북', Icon: FacebookIcon },
 ] as const;
 
+// Service data - 4 services in 2x2 grid with 3dicons.co Clay 3D icons (CC0 License)
+const services = [
+  {
+    to: '/chat',
+    title: '대화 분석',
+    iconUrl: '/icons/chat-bubble.png',
+  },
+  {
+    to: '/training',
+    title: '면역 훈련',
+    iconUrl: '/icons/mobile.png',
+  },
+  {
+    to: '/image-search',
+    title: '딥페이크 검사',
+    iconUrl: '/icons/camera.png',
+  },
+  {
+    to: '/profile-search',
+    title: '프로필 검색',
+    iconUrl: '/icons/megaphone.png',
+  },
+];
+
+function ServiceCardComponent({ service }: { service: typeof services[0] }) {
+  return (
+    <ServiceCard to={service.to}>
+      <IconImage src={service.iconUrl} alt={service.title} />
+      <ServiceTitle>{service.title}</ServiceTitle>
+    </ServiceCard>
+  );
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
   const { contacts, addContact } = useContactsStore();
+  const { isDarkMode, toggleTheme } = useThemeStore();
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [messenger, setMessenger] = useState<string>('');
@@ -364,56 +514,73 @@ export default function HomePage() {
 
   return (
     <Container>
-      <Header>
-        <Title>Enigma</Title>
-        <AddButton onClick={() => setShowModal(true)}>+</AddButton>
-      </Header>
+      <Nav>
+        <NavInner>
+          <Logo>
+            <LogoIcon>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </LogoIcon>
+            Enigma
+          </Logo>
+          <NavActions>
+            <ThemeToggle onClick={toggleTheme} aria-label="Toggle theme">
+              {isDarkMode ? <SunIcon /> : <MoonIcon />}
+            </ThemeToggle>
+            <NavButton onClick={() => setShowModal(true)}>
+              분석 시작
+            </NavButton>
+          </NavActions>
+        </NavInner>
+      </Nav>
 
-      <Section>
-        <CardGrid>
-          <Card to="/chat">
-            <IconBox><ChatIcon /></IconBox>
-            <CardTitle>대화 분석</CardTitle>
-            <CardDesc>위험도 체크</CardDesc>
-          </Card>
+      <HeroSection>
+        <HeroBadge>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#635bff" strokeWidth="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <BadgeText>AI 기반 스캠 탐지 서비스</BadgeText>
+        </HeroBadge>
+        <HeroTitle>
+          로맨스 스캠으로부터<br />
+          당신을 보호합니다
+        </HeroTitle>
+        <HeroDesc>
+          Enigma는 AI 기술을 활용하여 대화, 프로필, 미디어를 분석하고
+          로맨스 스캠의 위험 신호를 탐지하여 피해를 예방합니다.
+        </HeroDesc>
+      </HeroSection>
 
-          <Card to="/training">
-            <IconBox><TrainingIcon /></IconBox>
-            <CardTitle>면역 훈련</CardTitle>
-            <CardDesc>대응 연습</CardDesc>
-          </Card>
-
-          <Card to="/image-search">
-            <IconBox><ImageIcon /></IconBox>
-            <CardTitle>사진/영상 검색</CardTitle>
-            <CardDesc>AI 역추적</CardDesc>
-          </Card>
-
-          <Card to="/profile-search">
-            <IconBox><ProfileIcon /></IconBox>
-            <CardTitle>프로필 검색</CardTitle>
-            <CardDesc>신원 확인</CardDesc>
-          </Card>
-        </CardGrid>
-      </Section>
+      <ServiceGrid>
+        {services.map((service) => (
+          <ServiceCardComponent key={service.to} service={service} />
+        ))}
+      </ServiceGrid>
 
       {contacts.length > 0 && (
         <ContactsSection>
-          <SectionLabel>분석 중인 대상</SectionLabel>
-          {contacts.map(contact => {
-            const m = getMessenger(contact.messenger);
-            return (
-              <ContactCard key={contact.id} to={`/analyze/${contact.id}`}>
-                <ContactAvatar>
-                  {m && <m.Icon />}
-                </ContactAvatar>
-                <ContactInfo>
-                  <ContactName>{contact.name}</ContactName>
-                  <ContactMeta>{m?.name}</ContactMeta>
-                </ContactInfo>
-              </ContactCard>
-            );
-          })}
+          <SectionHeader>
+            <SectionLabel>진행 중</SectionLabel>
+            <SectionTitle>분석 중인 대상</SectionTitle>
+          </SectionHeader>
+          <ContactsList>
+            {contacts.map(contact => {
+              const m = getMessenger(contact.messenger);
+              return (
+                <ContactCard key={contact.id} to={`/analyze/${contact.id}`}>
+                  <ContactAvatar>
+                    {m && <m.Icon />}
+                  </ContactAvatar>
+                  <ContactInfo>
+                    <ContactName>{contact.name}</ContactName>
+                    <ContactMeta>{m?.name}</ContactMeta>
+                  </ContactInfo>
+                  <ArrowIcon />
+                </ContactCard>
+              );
+            })}
+          </ContactsList>
         </ContactsSection>
       )}
 
