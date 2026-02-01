@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/shared/api/client';
+import { API_URL } from '@/shared/config/env';
 import type { Persona, SessionData, TrainingResult } from '@/entities/persona';
 
 interface PersonasResponse {
@@ -20,6 +21,7 @@ interface MessageResponse {
     scammerMessage: string;
     turnCount: number;
     hint?: string;
+    imageUrl?: string;
   };
   error?: string;
 }
@@ -36,7 +38,11 @@ export function usePersonas() {
     queryFn: async (): Promise<Persona[]> => {
       const response = await apiClient.get<PersonasResponse>('/api/training/personas');
       if (response.success && response.data) {
-        return response.data.personas;
+        // profile_photo를 전체 URL로 변환
+        return response.data.personas.map(persona => ({
+          ...persona,
+          profile_photo: persona.profile_photo ? `${API_URL}${persona.profile_photo}` : '',
+        }));
       }
       throw new Error(response.error || 'Failed to fetch personas');
     },
@@ -67,7 +73,7 @@ export function useSendMessage() {
     }: {
       sessionId: string;
       message: string;
-    }): Promise<{ scammerMessage: string; turnCount: number; hint?: string }> => {
+    }): Promise<{ scammerMessage: string; turnCount: number; hint?: string; imageUrl?: string }> => {
       const response = await apiClient.post<MessageResponse>('/api/training/message', {
         session_id: sessionId,
         message,

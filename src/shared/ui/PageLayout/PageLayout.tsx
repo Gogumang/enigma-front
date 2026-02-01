@@ -4,24 +4,22 @@ import type { ReactNode } from 'react';
 
 const Container = styled.div`
   min-height: 100vh;
-  background: #f2f4f8;
+  background: var(--bg-secondary);
 `;
 
 const Header = styled.header`
   position: sticky;
   top: 0;
-  background: #f2f4f8;
+  background: var(--bg-card);
   z-index: 100;
+  border-bottom: 1px solid var(--border-color);
 `;
 
 const HeaderInner = styled.div`
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 0 8px;
   height: 56px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  padding: 0 8px;
 `;
 
 const BackButton = styled(Link)`
@@ -30,12 +28,12 @@ const BackButton = styled(Link)`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #191f28;
+  color: var(--text-primary);
   border-radius: 12px;
   text-decoration: none;
 
   &:active {
-    background: #f2f4f6;
+    background: var(--bg-secondary);
   }
 
   svg {
@@ -47,7 +45,7 @@ const BackButton = styled(Link)`
 const HeaderTitle = styled.h1`
   font-size: 18px;
   font-weight: 600;
-  color: #191f28;
+  color: var(--text-primary);
   margin: 0;
 `;
 

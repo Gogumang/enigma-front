@@ -236,7 +236,20 @@ export default function FraudPage() {
       {result && (
         <>
           <ResultCard $safe={result.safe}>
-            <ResultIcon>{result.safe ? '✅' : '🚨'}</ResultIcon>
+            <ResultIcon>
+              {result.safe ? (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#20c997" strokeWidth="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              ) : (
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#f04452" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              )}
+            </ResultIcon>
             <ResultTitle $safe={result.safe}>
               {result.safe ? '사기 이력 없음' : '사기 이력 발견'}
             </ResultTitle>

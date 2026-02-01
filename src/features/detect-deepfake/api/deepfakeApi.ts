@@ -7,6 +7,7 @@ interface Marker {
   y: number;
   label: string;
   description: string;
+  intensity?: number;  // 의심 강도 (0-1)
 }
 
 interface DeepfakeAnalysisData {
@@ -23,6 +24,7 @@ interface DeepfakeAnalysisData {
   markers?: Marker[];
   technicalIndicators?: string[];
   overallAssessment?: string;
+  heatmapImage?: string;  // 히트맵 이미지 (base64)
 }
 
 interface DeepfakeResponse {

@@ -1,9 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import styled from '@emotion/styled';
+import { keyframes } from '@emotion/react';
+import Lottie from 'lottie-react';
 import { PageLayout } from '@/shared/ui';
 import { sessionStore } from '@/shared/lib/storage';
 import type { DeepfakeResult } from '@/features/detect-deepfake';
+import safeAnimation from '@/shared/assets/lottie/safe.json';
+import warningAnimation from '@/shared/assets/lottie/warning.json';
+import dangerAnimation from '@/shared/assets/lottie/danger.json';
+
+interface Marker {
+  id: number;
+  x: number;
+  y: number;
+  label: string;
+  description: string;
+  intensity?: number;
+}
 
 const Container = styled.div`
   display: flex;
@@ -12,18 +26,201 @@ const Container = styled.div`
 `;
 
 const ResultImageContainer = styled.div`
-  position: relative;
-  width: 100%;
-  border-radius: 16px;
-  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-top: 60px;
   margin-bottom: 60px;
+  gap: 16px;
+`;
+
+const ImageToggle = styled.div`
+  display: flex;
+  gap: 8px;
+  background: #f2f4f6;
+  padding: 4px;
+  border-radius: 10px;
+`;
+
+const ToggleButton = styled.button<{ $active: boolean }>`
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: ${props => props.$active ? '#fff' : 'transparent'};
+  color: ${props => props.$active ? '#191f28' : '#6b7684'};
+  box-shadow: ${props => props.$active ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'};
+
+  &:hover {
+    color: #191f28;
+  }
+`;
+
+const ImageWrapper = styled.div`
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
 `;
 
 const ResultImage = styled.img`
-  width: 100%;
+  max-width: 100%;
   display: block;
   border-radius: 16px;
+`;
+
+const pulseAnimation = keyframes`
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 0 0 rgba(240, 68, 82, 0.7);
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 0 0 10px rgba(240, 68, 82, 0);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 0 0 rgba(240, 68, 82, 0);
+  }
+`;
+
+const MarkerDot = styled.button<{ $x: number; $y: number; $isActive: boolean }>`
+  position: absolute;
+  left: ${props => props.$x}%;
+  top: ${props => props.$y}%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: ${props => props.$isActive ? '#f04452' : 'rgba(240, 68, 82, 0.8)'};
+  border: 3px solid white;
+  cursor: pointer;
+  z-index: 10;
+  animation: ${pulseAnimation} 2s infinite;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    background: #f04452;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+`;
+
+const MarkerNumber = styled.span`
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+`;
+
+const MarkerTooltip = styled.div<{ $x: number; $y: number }>`
+  position: absolute;
+  left: ${props => props.$x}%;
+  top: ${props => props.$y + 4}%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  max-width: 200px;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid rgba(0, 0, 0, 0.9);
+  }
+`;
+
+const TooltipLabel = styled.div`
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #f04452;
+`;
+
+const TooltipDescription = styled.div`
+  color: #e5e8eb;
+  line-height: 1.4;
+`;
+
+const MarkersLegend = styled.div`
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+`;
+
+const LegendTitle = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: #191f28;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    stroke: #f04452;
+  }
+`;
+
+const LegendItem = styled.div<{ $isActive: boolean }>`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: ${props => props.$isActive ? '#ffebee' : 'transparent'};
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #f8f9fa;
+  }
+
+  & + & {
+    margin-top: 8px;
+  }
+`;
+
+const LegendNumber = styled.div`
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #f04452;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+const LegendContent = styled.div`
+  flex: 1;
+`;
+
+const LegendLabel = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: #191f28;
+  margin-bottom: 2px;
+`;
+
+const LegendDescription = styled.div`
+  font-size: 13px;
+  color: #6b7684;
+  line-height: 1.4;
 `;
 
 const ResultCard = styled.div<{ $status: 'safe' | 'warning' | 'danger' }>`
@@ -35,9 +232,10 @@ const ResultCard = styled.div<{ $status: 'safe' | 'warning' | 'danger' }>`
     props.$status === 'warning' ? '#fff8e6' : '#ffebee'};
 `;
 
-const ResultIcon = styled.div`
-  font-size: 48px;
-  margin-bottom: 12px;
+const LottieContainer = styled.div`
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
 `;
 
 const ResultTitle = styled.div<{ $status: 'safe' | 'warning' | 'danger' }>`
@@ -139,6 +337,8 @@ const EmptyState = styled.div`
 export default function ImageResultPage() {
   const navigate = useNavigate();
   const [result, setResult] = useState<DeepfakeResult | null>(null);
+  const [selectedMarker, setSelectedMarker] = useState<number | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   useEffect(() => {
     const stored = sessionStore.get<DeepfakeResult>('deepfakeResult');
@@ -147,11 +347,19 @@ export default function ImageResultPage() {
     }
   }, []);
 
+  const markers: Marker[] = (result?.data?.markers as Marker[]) || [];
+  const heatmapImage = result?.data?.heatmapImage;
+
   if (!result) {
     return (
       <PageLayout title="분석 결과">
         <EmptyState>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
+          <div style={{ marginBottom: '16px' }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6b7684" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
           <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>분석 결과가 없습니다</div>
           <div style={{ fontSize: '14px' }}>먼저 이미지를 분석해주세요</div>
           <BackButton onClick={() => navigate({ to: '/image-search' })} style={{ marginTop: '24px' }}>
@@ -174,16 +382,30 @@ export default function ImageResultPage() {
   const getResultContent = () => {
     if (result.data.isDeepfake) {
       return {
-        icon: '🚨',
         title: 'AI 생성/조작 의심',
         desc: '이 이미지는 딥페이크 또는 AI 생성 콘텐츠일 가능성이 있습니다',
       };
     }
     return {
-      safe: { icon: '✅', title: '정상 이미지', desc: '딥페이크나 AI 조작 흔적이 발견되지 않았습니다' },
-      warning: { icon: '⚠️', title: '주의 필요', desc: '일부 AI 생성 특징이 감지되었습니다' },
-      danger: { icon: '🚨', title: 'AI 생성/조작 의심', desc: '딥페이크 또는 AI 생성 콘텐츠일 가능성이 높습니다' },
+      safe: { title: '정상 이미지', desc: '딥페이크나 AI 조작 흔적이 발견되지 않았습니다' },
+      warning: { title: '주의 필요', desc: '일부 AI 생성 특징이 감지되었습니다' },
+      danger: { title: 'AI 생성/조작 의심', desc: '딥페이크 또는 AI 생성 콘텐츠일 가능성이 높습니다' },
     }[status];
+  };
+
+  const getStatusIcon = (s: 'safe' | 'warning' | 'danger') => {
+    const animationData = s === 'danger' ? dangerAnimation :
+                          s === 'warning' ? warningAnimation : safeAnimation;
+
+    return (
+      <LottieContainer>
+        <Lottie
+          animationData={animationData}
+          loop={true}
+          autoplay={true}
+        />
+      </LottieContainer>
+    );
   };
 
   const content = getResultContent();
@@ -193,12 +415,50 @@ export default function ImageResultPage() {
       <Container>
         {result.imageData && (
           <ResultImageContainer>
-            <ResultImage src={result.imageData} alt="분석된 이미지" />
+            {heatmapImage && (
+              <ImageToggle>
+                <ToggleButton $active={!showHeatmap} onClick={() => setShowHeatmap(false)}>
+                  원본
+                </ToggleButton>
+                <ToggleButton $active={showHeatmap} onClick={() => setShowHeatmap(true)}>
+                  히트맵
+                </ToggleButton>
+              </ImageToggle>
+            )}
+            <ImageWrapper onClick={() => setSelectedMarker(null)}>
+              <ResultImage
+                src={showHeatmap && heatmapImage ? `data:image/jpeg;base64,${heatmapImage}` : result.imageData}
+                alt="분석된 이미지"
+              />
+              {!showHeatmap && markers.map((marker, index) => (
+                <MarkerDot
+                  key={marker.id}
+                  $x={marker.x}
+                  $y={marker.y}
+                  $isActive={selectedMarker === marker.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedMarker(selectedMarker === marker.id ? null : marker.id);
+                  }}
+                >
+                  <MarkerNumber>{index + 1}</MarkerNumber>
+                </MarkerDot>
+              ))}
+              {!showHeatmap && selectedMarker !== null && markers.find(m => m.id === selectedMarker) && (
+                <MarkerTooltip
+                  $x={markers.find(m => m.id === selectedMarker)!.x}
+                  $y={markers.find(m => m.id === selectedMarker)!.y}
+                >
+                  <TooltipLabel>{markers.find(m => m.id === selectedMarker)!.label}</TooltipLabel>
+                  <TooltipDescription>{markers.find(m => m.id === selectedMarker)!.description}</TooltipDescription>
+                </MarkerTooltip>
+              )}
+            </ImageWrapper>
           </ResultImageContainer>
         )}
 
         <ResultCard $status={status}>
-          <ResultIcon>{content?.icon}</ResultIcon>
+          {getStatusIcon(status)}
           <ResultTitle $status={status}>{content?.title}</ResultTitle>
           <ResultDesc>{content?.desc}</ResultDesc>
 
@@ -212,6 +472,32 @@ export default function ImageResultPage() {
             </ConfidenceTrack>
           </ConfidenceBar>
         </ResultCard>
+
+        {markers.length > 0 && (
+          <MarkersLegend>
+            <LegendTitle>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              탐지된 의심 영역 ({markers.length}개)
+            </LegendTitle>
+            {markers.map((marker, index) => (
+              <LegendItem
+                key={marker.id}
+                $isActive={selectedMarker === marker.id}
+                onClick={() => setSelectedMarker(selectedMarker === marker.id ? null : marker.id)}
+              >
+                <LegendNumber>{index + 1}</LegendNumber>
+                <LegendContent>
+                  <LegendLabel>{marker.label}</LegendLabel>
+                  <LegendDescription>{marker.description}</LegendDescription>
+                </LegendContent>
+              </LegendItem>
+            ))}
+          </MarkersLegend>
+        )}
 
         <DetailCard>
           <DetailItem>

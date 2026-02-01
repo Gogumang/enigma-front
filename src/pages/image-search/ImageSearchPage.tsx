@@ -5,6 +5,12 @@ import { PageLayout, ImageDropzone } from '@/shared/ui';
 import { useDeepfakeAnalysis } from '@/features/detect-deepfake';
 import { sessionStore } from '@/shared/lib/storage';
 
+const ContentWrapper = styled.div`
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px 0;
+`;
+
 const DropzoneWrapper = styled.div`
   margin-bottom: 20px;
 `;
@@ -12,7 +18,7 @@ const DropzoneWrapper = styled.div`
 const Button = styled.button`
   width: 100%;
   padding: 16px;
-  background: #a855f7;
+  background: var(--accent-gradient);
   color: white;
   border: none;
   border-radius: 12px;
@@ -21,27 +27,27 @@ const Button = styled.button`
   cursor: pointer;
 
   &:active {
-    background: #9333ea;
+    opacity: 0.9;
   }
 
   &:disabled {
-    background: #e5e8eb;
-    color: #adb5bd;
+    background: var(--border-color);
+    color: var(--text-tertiary);
   }
 `;
 
 const TipCard = styled.div`
   margin-top: 20px;
   padding: 20px;
-  background: #fff;
+  background: var(--bg-card);
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
 `;
 
 const TipTitle = styled.div`
   font-size: 14px;
   font-weight: 600;
-  color: #191f28;
+  color: var(--text-primary);
   margin-bottom: 12px;
 `;
 
@@ -52,7 +58,7 @@ const TipList = styled.ul`
 
 const TipItem = styled.li`
   font-size: 13px;
-  color: #6b7684;
+  color: var(--text-secondary);
   line-height: 1.8;
 `;
 
@@ -94,39 +100,39 @@ export default function ImageSearchPage() {
 
   return (
     <PageLayout title="딥페이크 검사기">
-      <DropzoneWrapper>
-        <ImageDropzone
-          onFileSelect={handleFileSelect}
-          accept="image+video"
-          title="이미지 또는 영상을 업로드하세요"
-          hint="드래그하거나 클릭하여 선택"
-          maxSizeMB={5}
-          icon={
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-              <path d="M15 8h.01" />
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <path d="M3 16l5-5c.928-.893 2.072-.893 3 0l5 5" />
-              <path d="M14 14l1-1c.928-.893 2.072-.893 3 0l3 3" />
-            </svg>
-          }
-        />
-      </DropzoneWrapper>
+      <ContentWrapper>
+        <DropzoneWrapper>
+          <ImageDropzone
+            onFileSelect={handleFileSelect}
+            accept="image+video"
+            title=""
+            hint=""
+            maxSizeMB={5}
+            icon={
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            }
+          />
+        </DropzoneWrapper>
 
-      <Button onClick={analyzeMedia} disabled={!file || deepfakeAnalysis.isPending}>
-        {deepfakeAnalysis.isPending ? 'AI 분석 중...' : '딥페이크 분석'}
-      </Button>
+        <Button onClick={analyzeMedia} disabled={!file || deepfakeAnalysis.isPending}>
+          {deepfakeAnalysis.isPending ? 'AI 분석 중...' : '딥페이크 분석'}
+        </Button>
 
-      {error && <ErrorMessage>{error}</ErrorMessage>}
+        {error && <ErrorMessage>{error}</ErrorMessage>}
 
-      <TipCard>
-        <TipTitle>딥페이크 탐지 팁</TipTitle>
-        <TipList>
-          <TipItem>상대방의 프로필 사진을 검사해보세요</TipItem>
-          <TipItem>영상 통화 화면을 캡처해 분석하면 효과적입니다</TipItem>
-          <TipItem>AI 생성 확률 50% 이상이면 주의가 필요합니다</TipItem>
-          <TipItem>얼굴 조작 수치가 높으면 딥페이크 가능성이 있습니다</TipItem>
-        </TipList>
-      </TipCard>
+        <TipCard>
+          <TipTitle>딥페이크 탐지 팁</TipTitle>
+          <TipList>
+            <TipItem>상대방의 프로필 사진을 검사해보세요</TipItem>
+            <TipItem>영상 통화 화면을 캡처해 분석하면 효과적입니다</TipItem>
+            <TipItem>AI 생성 확률 50% 이상이면 주의가 필요합니다</TipItem>
+            <TipItem>얼굴 조작 수치가 높으면 딥페이크 가능성이 있습니다</TipItem>
+          </TipList>
+        </TipCard>
+      </ContentWrapper>
     </PageLayout>
   );
 }

@@ -215,11 +215,15 @@ export function ImageDropzone({
         </>
       ) : (
         <>
-          <IconWrapper $hasFile={false}>
-            {icon || defaultIcon}
-          </IconWrapper>
-          <Title>{title}</Title>
-          <Hint>{hint}</Hint>
+          {title || hint ? (
+            <IconWrapper $hasFile={false}>
+              {icon || defaultIcon}
+            </IconWrapper>
+          ) : (
+            <div style={{ color: '#8b95a1' }}>{icon || defaultIcon}</div>
+          )}
+          {title && <Title>{title}</Title>}
+          {hint && <Hint>{hint}</Hint>}
         </>
       )}
 

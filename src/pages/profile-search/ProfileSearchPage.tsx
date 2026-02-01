@@ -1,36 +1,22 @@
 import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import styled from '@emotion/styled';
 import { PageLayout, ImageDropzone } from '@/shared/ui';
 import { useProfileSearch, useScammerReport } from '@/features/search-profile';
+import { sessionStore } from '@/shared/lib/storage';
 
-const SearchCard = styled.div`
-  background: #fff;
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+const ContentWrapper = styled.div`
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px 0;
 `;
 
-const Divider = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin: 20px 0;
-`;
-
-const DividerLine = styled.div`
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e5e8eb, transparent);
-`;
-
-const DividerText = styled.span`
-  font-size: 12px;
-  color: #adb5bd;
-  font-weight: 500;
+const DropzoneWrapper = styled.div`
+  margin-bottom: 20px;
 `;
 
 const InputGroup = styled.div`
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 `;
 
 const Label = styled.label`
@@ -39,658 +25,135 @@ const Label = styled.label`
   gap: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: #6b7684;
+  color: var(--text-secondary);
   margin-bottom: 8px;
 `;
 
 const OptionalBadge = styled.span`
   font-size: 10px;
   padding: 2px 6px;
-  background: #f2f4f6;
+  background: var(--bg-secondary);
   border-radius: 4px;
-  color: #8b95a1;
+  color: var(--text-tertiary);
   font-weight: 500;
 `;
 
 const Input = styled.input`
   width: 100%;
   padding: 14px 16px;
-  border: 1.5px solid #e5e8eb;
+  border: 1.5px solid var(--border-color);
   border-radius: 12px;
-  background: #f9fafb;
+  background: var(--bg-secondary);
   font-size: 15px;
-  color: #191f28;
+  color: var(--text-primary);
   transition: all 0.2s;
 
   &:focus {
     outline: none;
-    border-color: #ff9500;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.1);
+    border-color: var(--accent-primary);
+    background: var(--bg-card);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
   }
 
   &::placeholder {
-    color: #adb5bd;
+    color: var(--text-tertiary);
   }
 `;
 
 const Button = styled.button`
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, #ff9500 0%, #f59e0b 100%);
+  background: var(--accent-gradient);
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: 12px;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 6px;
-  box-shadow: 0 4px 14px rgba(255, 149, 0, 0.35);
-  transition: all 0.2s;
 
   &:active {
-    transform: scale(0.98);
+    opacity: 0.9;
   }
 
   &:disabled {
-    background: #e5e8eb;
-    color: #adb5bd;
-    box-shadow: none;
+    background: var(--border-color);
+    color: var(--text-tertiary);
   }
-`;
-
-const ResultSection = styled.div`
-  margin-top: 28px;
-`;
-
-const ScammerAlertSection = styled.div`
-  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-  border: 2px solid #fca5a5;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 24px;
-`;
-
-const ScammerAlertHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-`;
-
-const ScammerAlertIcon = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-`;
-
-const ScammerAlertTitle = styled.div`
-  font-size: 18px;
-  font-weight: 700;
-  color: #dc2626;
-`;
-
-const ScammerAlertSubtitle = styled.div`
-  font-size: 13px;
-  color: #991b1b;
-`;
-
-const ScammerCard = styled.div`
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 10px;
-  border: 1px solid #fecaca;
-`;
-
-const ScammerInfo = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-
-const ScammerName = styled.div`
-  font-size: 15px;
-  font-weight: 600;
-  color: #191f28;
-`;
-
-const ScammerMeta = styled.div`
-  font-size: 12px;
-  color: #6b7684;
-  margin-top: 4px;
-`;
-
-const ConfidenceBadge = styled.span<{ $confidence: number }>`
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  background: ${props =>
-    props.$confidence >= 80 ? '#dc2626' :
-    props.$confidence >= 60 ? '#f59e0b' : '#6b7684'};
-  color: #fff;
-`;
-
-const ImageCompareSection = styled.div`
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-
-const ImageCompareHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-`;
-
-const ImageCompareTitle = styled.div`
-  font-size: 16px;
-  font-weight: 700;
-  color: #191f28;
-`;
-
-const ImageCompareCount = styled.span`
-  background: #ff9500;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 700;
-`;
-
-const UploadedImageSection = styled.div`
-  text-align: center;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e5e8eb;
-`;
-
-const UploadedImageLabel = styled.div`
-  font-size: 13px;
-  color: #6b7684;
-  margin-bottom: 12px;
-  font-weight: 600;
-`;
-
-const UploadedImagePreview = styled.img`
-  width: 120px;
-  height: 120px;
-  border-radius: 12px;
-  object-fit: cover;
-  border: 3px solid #ff9500;
-  box-shadow: 0 4px 12px rgba(255, 149, 0, 0.3);
-`;
-
-const FoundImagesGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-
-  @media (min-width: 480px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-`;
-
-const FoundImageCard = styled.a`
-  display: flex;
-  flex-direction: column;
-  background: #f8f9fa;
-  border-radius: 12px;
-  overflow: hidden;
-  text-decoration: none;
-  transition: all 0.2s;
-  border: 2px solid transparent;
-
-  &:hover {
-    border-color: #ff9500;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-`;
-
-const FoundImageThumbnail = styled.img`
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  background: #e5e8eb;
-`;
-
-const FoundImagePlaceholder = styled.div`
-  width: 100%;
-  aspect-ratio: 1;
-  background: linear-gradient(135deg, #e5e8eb, #d1d5db);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-`;
-
-const FoundImageInfo = styled.div`
-  padding: 10px;
-`;
-
-const FoundImageSource = styled.div`
-  font-size: 11px;
-  color: #6b7684;
-  margin-bottom: 6px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const FoundImageBadges = styled.div`
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-`;
-
-const PlatformBadge = styled.span<{ $platform: string }>`
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  background: ${props => {
-    switch (props.$platform) {
-      case 'instagram': return 'linear-gradient(135deg, #E4405F, #C13584)';
-      case 'facebook': return 'linear-gradient(135deg, #1877F2, #0d65d9)';
-      case 'linkedin': return 'linear-gradient(135deg, #0A66C2, #004182)';
-      case 'twitter': return 'linear-gradient(135deg, #000, #333)';
-      case 'tiktok': return 'linear-gradient(135deg, #000, #25F4EE)';
-      case 'vk': return 'linear-gradient(135deg, #4a76a8, #3b5998)';
-      default: return 'linear-gradient(135deg, #6b7684, #8b95a1)';
-    }
-  }};
-  color: white;
-`;
-
-const FoundImageMatchScore = styled.div<{ $score: number }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  background: ${props => {
-    if (props.$score >= 80) return '#fee2e2';
-    if (props.$score >= 60) return '#fef3c7';
-    if (props.$score >= 40) return '#d1fae5';
-    return '#f3f4f6';
-  }};
-  color: ${props => {
-    if (props.$score >= 80) return '#dc2626';
-    if (props.$score >= 60) return '#d97706';
-    if (props.$score >= 40) return '#059669';
-    return '#6b7684';
-  }};
-`;
-
-const NoImageResults = styled.div`
-  text-align: center;
-  padding: 40px 20px;
-  color: #6b7684;
-`;
-
-const NoImageResultsIcon = styled.div`
-  font-size: 48px;
-  margin-bottom: 12px;
-`;
-
-const NoImageResultsText = styled.div`
-  font-size: 14px;
-`;
-
-const ReverseSearchSection = styled.div`
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-
-const ReverseSearchTitle = styled.div`
-  font-size: 15px;
-  font-weight: 700;
-  color: #191f28;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-const ReverseSearchHint = styled.div`
-  font-size: 12px;
-  color: #6b7684;
-  margin-bottom: 14px;
-`;
-
-const ReverseSearchGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-`;
-
-const ReverseSearchLink = styled.a`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #f2f4f6 100%);
-  border-radius: 12px;
-  text-decoration: none;
-  transition: all 0.2s;
-
-  &:active {
-    transform: scale(0.98);
-    background: #e5e8eb;
-  }
-`;
-
-const ReverseSearchIcon = styled.span`
-  font-size: 20px;
-`;
-
-const ReverseSearchName = styled.span`
-  font-size: 13px;
-  font-weight: 600;
-  color: #191f28;
-`;
-
-const ResultHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  padding: 0 4px;
-`;
-
-const ResultTitle = styled.h3`
-  font-size: 17px;
-  font-weight: 700;
-  color: #191f28;
-  margin: 0;
-  display: flex;
-  align-items: center;
-`;
-
-const PlatformSection = styled.div`
-  margin-bottom: 24px;
-`;
-
-const PlatformHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding: 0 4px;
-`;
-
-const PlatformIconWrapper = styled.div<{ $color: string }>`
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  background: ${props => props.$color};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const PlatformName = styled.span`
-  font-size: 14px;
-  font-weight: 600;
-  color: #191f28;
-`;
-
-const ProfileCard = styled.a`
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: #fff;
-  border-radius: 14px;
-  text-decoration: none;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  transition: all 0.2s;
-
-  &:active {
-    transform: scale(0.99);
-    background: #fafbfc;
-  }
-`;
-
-const ProfileImageWrapper = styled.div`
-  position: relative;
-`;
-
-const ProfileImage = styled.img`
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: linear-gradient(135deg, #f2f4f6 0%, #e5e8eb 100%);
-`;
-
-const ProfileInfo = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const ProfileName = styled.div`
-  font-size: 15px;
-  font-weight: 600;
-  color: #191f28;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 2px;
-`;
-
-const ProfileUsername = styled.div`
-  font-size: 13px;
-  color: #8b95a1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const MatchBadge = styled.span<{ $score: number }>`
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  background: ${props =>
-    props.$score >= 80 ? 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)' :
-    props.$score >= 50 ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' :
-    'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)'};
-  color: ${props => props.$score >= 80 ? '#dc2626' : props.$score >= 50 ? '#d97706' : '#059669'};
-  flex-shrink: 0;
-`;
-
-const ArrowIcon = styled.div`
-  color: #d1d5db;
-  margin-left: 4px;
 `;
 
 const ReportButton = styled.button`
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  color: white;
-  border: none;
+  background: transparent;
+  color: #f04452;
+  border: 1.5px solid #f04452;
   border-radius: 12px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  margin-top: 12px;
   transition: all 0.2s;
 
   &:active {
-    transform: scale(0.98);
+    background: #fff5f5;
   }
 
   &:disabled {
-    background: #e5e8eb;
-    color: #adb5bd;
+    border-color: var(--border-color);
+    color: var(--text-tertiary);
   }
 `;
 
-const ErrorMessage = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  border-radius: 12px;
-  color: #dc2626;
-  font-size: 14px;
-  margin-top: 16px;
-`;
-
-const SuccessMessage = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  border-radius: 12px;
-  color: #059669;
-  font-size: 14px;
-  margin-top: 16px;
-`;
-
 const TipCard = styled.div`
-  margin-top: 24px;
+  margin-top: 20px;
   padding: 20px;
-  background: linear-gradient(135deg, #fff 0%, #fafbfc 100%);
+  background: var(--bg-card);
   border-radius: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-`;
-
-const TipHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-`;
-
-const TipIcon = styled.div`
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
+  box-shadow: var(--shadow-sm);
 `;
 
 const TipTitle = styled.div`
   font-size: 14px;
-  font-weight: 700;
-  color: #191f28;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
 `;
 
-const TipList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+const TipList = styled.ul`
+  margin: 0;
+  padding: 0 0 0 20px;
 `;
 
-const TipItem = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+const TipItem = styled.li`
   font-size: 13px;
-  color: #6b7684;
-  line-height: 1.5;
+  color: var(--text-secondary);
+  line-height: 1.8;
 `;
 
-const TipBullet = styled.div`
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #d1d5db;
-  margin-top: 6px;
-  flex-shrink: 0;
+const ErrorMessage = styled.div`
+  padding: 16px;
+  background: #ffebee;
+  border-radius: 12px;
+  color: #f04452;
+  font-size: 14px;
+  margin-top: 16px;
+  text-align: center;
 `;
 
-interface ProfileResult {
-  platform: string;
-  name: string;
-  username: string;
-  profileUrl: string;
-  imageUrl: string;
-  matchScore: number;
-}
-
-interface ScammerMatch {
-  id: string;
-  name: string;
-  confidence: number;
-  reportCount: number;
-  reportedAt: Date;
-}
-
-interface ReverseSearchLinkData {
-  platform: string;
-  name: string;
-  url: string;
-  icon: string;
-}
-
-interface WebImageResult {
-  title: string;
-  sourceUrl: string;
-  imageUrl: string;
-  thumbnailUrl: string | null;
-  platform: string;
-  matchScore: number;
-}
-
-interface SearchResult {
-  totalFound: number;
-  scammerMatches: ScammerMatch[];
-  reverseSearchLinks: ReverseSearchLinkData[];
-  webImageResults: WebImageResult[];
-  uploadedImageUrl: string | null;
-  results: {
-    instagram: ProfileResult[];
-    facebook: ProfileResult[];
-    twitter: ProfileResult[];
-    linkedin: ProfileResult[];
-    google: ProfileResult[];
-  };
-}
-
-const platformConfig: Record<string, { icon: string; name: string; color: string }> = {
-  instagram: { icon: '📷', name: 'Instagram', color: 'linear-gradient(135deg, #E4405F 0%, #C13584 100%)' },
-  facebook: { icon: '👤', name: 'Facebook', color: 'linear-gradient(135deg, #1877F2 0%, #0d65d9 100%)' },
-  twitter: { icon: '✕', name: 'X', color: 'linear-gradient(135deg, #000 0%, #333 100%)' },
-  linkedin: { icon: '💼', name: 'LinkedIn', color: 'linear-gradient(135deg, #0A66C2 0%, #004182 100%)' },
-  google: { icon: '🔍', name: 'Google', color: 'linear-gradient(135deg, #4285F4 0%, #1a73e8 100%)' },
-};
+const SuccessMessage = styled.div`
+  padding: 16px;
+  background: #e8f7f0;
+  border-radius: 12px;
+  color: #20c997;
+  font-size: 14px;
+  margin-top: 16px;
+  text-align: center;
+`;
 
 export default function ProfileSearchPage() {
+  const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [result, setResult] = useState<SearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reportSuccess, setReportSuccess] = useState<string | null>(null);
 
@@ -699,46 +162,30 @@ export default function ProfileSearchPage() {
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
-    setResult(null);
     setError(null);
     setReportSuccess(null);
-
-    // 결과 섹션 미리보기용
-    const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
-    reader.readAsDataURL(selectedFile);
   };
 
   const canSearch = file || name.trim();
 
-  const hasAnyPlatformResults = (results: SearchResult['results']) => {
-    return Object.values(results).some(arr => arr.length > 0);
-  };
-
   const search = async () => {
     if (!canSearch) return;
     setError(null);
-    setResult(null);
     setReportSuccess(null);
 
     try {
-      const data = await profileSearch.mutateAsync({ image: file || undefined, query: name.trim() || undefined });
+      const data = await profileSearch.mutateAsync({
+        image: file || undefined,
+        query: name.trim() || undefined
+      });
 
-      const safeData: SearchResult = {
-        totalFound: data.totalFound ?? 0,
-        scammerMatches: data.scammerMatches ?? [],
-        reverseSearchLinks: data.reverseSearchLinks ?? [],
-        webImageResults: data.webImageResults ?? [],
-        uploadedImageUrl: data.uploadedImageUrl ?? null,
-        results: {
-          instagram: data.results?.instagram ?? [],
-          facebook: data.results?.facebook ?? [],
-          twitter: data.results?.twitter ?? [],
-          linkedin: data.results?.linkedin ?? [],
-          google: data.results?.google ?? [],
-        }
-      };
-      setResult(safeData);
+      // 결과를 세션에 저장하고 결과 페이지로 이동
+      sessionStore.set('profileSearchResult', {
+        ...data,
+        searchQuery: name.trim(),
+        searchedAt: new Date().toISOString(),
+      });
+      navigate({ to: '/profile-search/result' });
     } catch (err) {
       setError(err instanceof Error ? err.message : '서버에 연결할 수 없습니다');
     }
@@ -746,7 +193,7 @@ export default function ProfileSearchPage() {
 
   const reportScammer = async () => {
     if (!file || !name.trim()) {
-      setError('스캐머 신고를 위해 사진과 이름이 필요합니다');
+      setError('사기꾼 신고를 위해 사진과 이름이 필요합니다');
       return;
     }
 
@@ -761,63 +208,24 @@ export default function ProfileSearchPage() {
     }
   };
 
-  const renderPlatformResults = (platform: string, profiles: ProfileResult[]) => {
-    if (profiles.length === 0) return null;
-    const config = platformConfig[platform];
-
-    return (
-      <PlatformSection key={platform}>
-        <PlatformHeader>
-          <PlatformIconWrapper $color={config.color}>
-            <span style={{ fontSize: '14px', filter: 'brightness(10)' }}>{config.icon}</span>
-          </PlatformIconWrapper>
-          <PlatformName>{config.name}</PlatformName>
-        </PlatformHeader>
-        {profiles.map((profile, i) => (
-          <ProfileCard key={i} href={profile.profileUrl} target="_blank" rel="noopener noreferrer">
-            <ProfileImageWrapper>
-              <ProfileImage src={profile.imageUrl} alt={profile.name} />
-            </ProfileImageWrapper>
-            <ProfileInfo>
-              <ProfileName>{profile.name}</ProfileName>
-              <ProfileUsername>@{profile.username}</ProfileUsername>
-            </ProfileInfo>
-            <MatchBadge $score={profile.matchScore}>
-              {profile.matchScore}%
-            </MatchBadge>
-            <ArrowIcon>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </ArrowIcon>
-          </ProfileCard>
-        ))}
-      </PlatformSection>
-    );
-  };
-
   return (
     <PageLayout title="프로필 검색">
-      <SearchCard>
-        <ImageDropzone
-          onFileSelect={handleFileSelect}
-          accept="image"
-          title="프로필 사진으로 검색"
-          hint="가장 정확한 검색 방법이에요"
-          maxSizeMB={2}
-          icon={
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
-            </svg>
-          }
-        />
-
-        <Divider>
-          <DividerLine />
-          <DividerText>또는</DividerText>
-          <DividerLine />
-        </Divider>
+      <ContentWrapper>
+        <DropzoneWrapper>
+          <ImageDropzone
+            onFileSelect={handleFileSelect}
+            accept="image"
+            title=""
+            hint=""
+            maxSizeMB={2}
+            icon={
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" strokeWidth="2">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            }
+          />
+        </DropzoneWrapper>
 
         <InputGroup>
           <Label>
@@ -837,172 +245,22 @@ export default function ProfileSearchPage() {
 
         {file && name.trim() && (
           <ReportButton onClick={reportScammer} disabled={scammerReport.isPending}>
-            {scammerReport.isPending ? '신고 중...' : '이 사람 스캐머로 신고하기'}
+            {scammerReport.isPending ? '신고 중...' : '이 사람을 사기꾼으로 신고'}
           </ReportButton>
         )}
-      </SearchCard>
 
-      {error && (
-        <ErrorMessage>
-          <span>⚠️</span>
-          {error}
-        </ErrorMessage>
-      )}
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+        {reportSuccess && <SuccessMessage>{reportSuccess}</SuccessMessage>}
 
-      {reportSuccess && (
-        <SuccessMessage>
-          <span>✓</span>
-          {reportSuccess}
-        </SuccessMessage>
-      )}
-
-      {result && (
-        <ResultSection>
-          {result.scammerMatches && result.scammerMatches.length > 0 && (
-            <ScammerAlertSection>
-              <ScammerAlertHeader>
-                <ScammerAlertIcon>⚠️</ScammerAlertIcon>
-                <div>
-                  <ScammerAlertTitle>스캐머 의심!</ScammerAlertTitle>
-                  <ScammerAlertSubtitle>신고된 스캐머와 일치하는 얼굴이 발견됐어요</ScammerAlertSubtitle>
-                </div>
-              </ScammerAlertHeader>
-              {result.scammerMatches.map((scammer, i) => (
-                <ScammerCard key={i}>
-                  <ScammerInfo>
-                    <div>
-                      <ScammerName>{scammer.name}</ScammerName>
-                      <ScammerMeta>신고 {scammer.reportCount}회</ScammerMeta>
-                    </div>
-                    <ConfidenceBadge $confidence={scammer.confidence}>
-                      {scammer.confidence}% 일치
-                    </ConfidenceBadge>
-                  </ScammerInfo>
-                </ScammerCard>
-              ))}
-            </ScammerAlertSection>
-          )}
-
-          <ImageCompareSection>
-            <ImageCompareHeader>
-              <span style={{ fontSize: '20px' }}>🔍</span>
-              <ImageCompareTitle>역이미지 검색 결과</ImageCompareTitle>
-              {result.webImageResults && result.webImageResults.length > 0 && (
-                <ImageCompareCount>{result.webImageResults.length}건 발견</ImageCompareCount>
-              )}
-            </ImageCompareHeader>
-
-            {preview && (
-              <UploadedImageSection>
-                <UploadedImageLabel>📤 업로드한 이미지</UploadedImageLabel>
-                <UploadedImagePreview src={preview} alt="Uploaded" />
-              </UploadedImageSection>
-            )}
-
-            {result.webImageResults && result.webImageResults.length > 0 ? (
-              <>
-                <UploadedImageLabel style={{ textAlign: 'left', marginBottom: '12px' }}>
-                  🌐 웹에서 발견된 위치
-                </UploadedImageLabel>
-                <FoundImagesGrid>
-                  {result.webImageResults.map((item, i) => (
-                    <FoundImageCard key={i} href={item.sourceUrl} target="_blank" rel="noopener noreferrer">
-                      {item.thumbnailUrl ? (
-                        <FoundImageThumbnail src={item.thumbnailUrl} alt={item.title} />
-                      ) : (
-                        <FoundImagePlaceholder>
-                          {item.platform === 'instagram' ? '📷' :
-                           item.platform === 'facebook' ? '👤' :
-                           item.platform === 'linkedin' ? '💼' :
-                           item.platform === 'twitter' ? '🐦' : '🔗'}
-                        </FoundImagePlaceholder>
-                      )}
-                      <FoundImageInfo>
-                        <FoundImageSource>
-                          {(() => {
-                            try {
-                              return new URL(item.sourceUrl).hostname;
-                            } catch {
-                              return item.sourceUrl.slice(0, 30);
-                            }
-                          })()}
-                        </FoundImageSource>
-                        <FoundImageBadges>
-                          <PlatformBadge $platform={item.platform}>
-                            {item.platform === 'other' ? 'WEB' : item.platform.toUpperCase()}
-                          </PlatformBadge>
-                          {item.matchScore > 0 && (
-                            <FoundImageMatchScore $score={item.matchScore}>
-                              {item.matchScore.toFixed(0)}%
-                            </FoundImageMatchScore>
-                          )}
-                        </FoundImageBadges>
-                      </FoundImageInfo>
-                    </FoundImageCard>
-                  ))}
-                </FoundImagesGrid>
-              </>
-            ) : (
-              <NoImageResults>
-                <NoImageResultsIcon>🔍</NoImageResultsIcon>
-                <NoImageResultsText>웹에서 유사한 이미지를 찾지 못했습니다</NoImageResultsText>
-              </NoImageResults>
-            )}
-          </ImageCompareSection>
-
-          {result.reverseSearchLinks && result.reverseSearchLinks.length > 0 && (
-            <ReverseSearchSection>
-              <ReverseSearchTitle>
-                <span>🔍</span>
-                직접 역이미지 검색하기
-              </ReverseSearchTitle>
-              <ReverseSearchHint>사진을 저장한 후 아래 사이트에서 업로드하세요</ReverseSearchHint>
-              <ReverseSearchGrid>
-                {result.reverseSearchLinks.map((link, i) => (
-                  <ReverseSearchLink key={i} href={link.url} target="_blank" rel="noopener noreferrer">
-                    <ReverseSearchIcon>{link.icon}</ReverseSearchIcon>
-                    <ReverseSearchName>{link.name}</ReverseSearchName>
-                  </ReverseSearchLink>
-                ))}
-              </ReverseSearchGrid>
-            </ReverseSearchSection>
-          )}
-
-          {hasAnyPlatformResults(result.results) && (
-            <>
-              <ResultHeader>
-                <ResultTitle>플랫폼에서 직접 검색</ResultTitle>
-              </ResultHeader>
-              {renderPlatformResults('instagram', result.results.instagram)}
-              {renderPlatformResults('facebook', result.results.facebook)}
-              {renderPlatformResults('twitter', result.results.twitter)}
-              {renderPlatformResults('linkedin', result.results.linkedin)}
-              {renderPlatformResults('google', result.results.google)}
-            </>
-          )}
-        </ResultSection>
-      )}
-
-      <TipCard>
-        <TipHeader>
-          <TipIcon>💡</TipIcon>
-          <TipTitle>검색 팁</TipTitle>
-        </TipHeader>
-        <TipList>
-          <TipItem>
-            <TipBullet />
-            프로필 사진으로 검색하면 스캐머 DB와 비교해요
-          </TipItem>
-          <TipItem>
-            <TipBullet />
-            역이미지 검색으로 다른 곳에서 사용된 사진 찾기
-          </TipItem>
-          <TipItem>
-            <TipBullet />
-            스캐머로 의심되면 신고해서 다른 사람들을 보호해요
-          </TipItem>
-        </TipList>
-      </TipCard>
+        <TipCard>
+          <TipTitle>프로필 검색 팁</TipTitle>
+          <TipList>
+            <TipItem>프로필 사진으로 검색하면 사기꾼 DB와 비교합니다</TipItem>
+            <TipItem>역이미지 검색으로 다른 곳에서 사용된 사진을 찾습니다</TipItem>
+            <TipItem>사기꾼으로 의심되면 신고해서 다른 사람들을 보호하세요</TipItem>
+          </TipList>
+        </TipCard>
+      </ContentWrapper>
     </PageLayout>
   );
 }

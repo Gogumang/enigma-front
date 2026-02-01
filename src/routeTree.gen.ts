@@ -11,11 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UrlRouteImport } from './routes/url'
 import { Route as TrainingRouteImport } from './routes/training'
-import { Route as ProfileSearchRouteImport } from './routes/profile-search'
 import { Route as FraudRouteImport } from './routes/fraud'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProfileSearchIndexRouteImport } from './routes/profile-search/index'
 import { Route as ImageSearchIndexRouteImport } from './routes/image-search/index'
+import { Route as ProfileSearchResultRouteImport } from './routes/profile-search/result'
 import { Route as ImageSearchResultRouteImport } from './routes/image-search/result'
 import { Route as AnalyzeIdRouteImport } from './routes/analyze/$id'
 
@@ -27,11 +28,6 @@ const UrlRoute = UrlRouteImport.update({
 const TrainingRoute = TrainingRouteImport.update({
   id: '/training',
   path: '/training',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileSearchRoute = ProfileSearchRouteImport.update({
-  id: '/profile-search',
-  path: '/profile-search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FraudRoute = FraudRouteImport.update({
@@ -49,9 +45,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileSearchIndexRoute = ProfileSearchIndexRouteImport.update({
+  id: '/profile-search/',
+  path: '/profile-search/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ImageSearchIndexRoute = ImageSearchIndexRouteImport.update({
   id: '/image-search/',
   path: '/image-search/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileSearchResultRoute = ProfileSearchResultRouteImport.update({
+  id: '/profile-search/result',
+  path: '/profile-search/result',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ImageSearchResultRoute = ImageSearchResultRouteImport.update({
@@ -69,35 +75,38 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
   '/fraud': typeof FraudRoute
-  '/profile-search': typeof ProfileSearchRoute
   '/training': typeof TrainingRoute
   '/url': typeof UrlRoute
   '/analyze/$id': typeof AnalyzeIdRoute
   '/image-search/result': typeof ImageSearchResultRoute
+  '/profile-search/result': typeof ProfileSearchResultRoute
   '/image-search/': typeof ImageSearchIndexRoute
+  '/profile-search/': typeof ProfileSearchIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
   '/fraud': typeof FraudRoute
-  '/profile-search': typeof ProfileSearchRoute
   '/training': typeof TrainingRoute
   '/url': typeof UrlRoute
   '/analyze/$id': typeof AnalyzeIdRoute
   '/image-search/result': typeof ImageSearchResultRoute
+  '/profile-search/result': typeof ProfileSearchResultRoute
   '/image-search': typeof ImageSearchIndexRoute
+  '/profile-search': typeof ProfileSearchIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/chat': typeof ChatRoute
   '/fraud': typeof FraudRoute
-  '/profile-search': typeof ProfileSearchRoute
   '/training': typeof TrainingRoute
   '/url': typeof UrlRoute
   '/analyze/$id': typeof AnalyzeIdRoute
   '/image-search/result': typeof ImageSearchResultRoute
+  '/profile-search/result': typeof ProfileSearchResultRoute
   '/image-search/': typeof ImageSearchIndexRoute
+  '/profile-search/': typeof ProfileSearchIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -105,46 +114,50 @@ export interface FileRouteTypes {
     | '/'
     | '/chat'
     | '/fraud'
-    | '/profile-search'
     | '/training'
     | '/url'
     | '/analyze/$id'
     | '/image-search/result'
+    | '/profile-search/result'
     | '/image-search/'
+    | '/profile-search/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/chat'
     | '/fraud'
-    | '/profile-search'
     | '/training'
     | '/url'
     | '/analyze/$id'
     | '/image-search/result'
+    | '/profile-search/result'
     | '/image-search'
+    | '/profile-search'
   id:
     | '__root__'
     | '/'
     | '/chat'
     | '/fraud'
-    | '/profile-search'
     | '/training'
     | '/url'
     | '/analyze/$id'
     | '/image-search/result'
+    | '/profile-search/result'
     | '/image-search/'
+    | '/profile-search/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChatRoute: typeof ChatRoute
   FraudRoute: typeof FraudRoute
-  ProfileSearchRoute: typeof ProfileSearchRoute
   TrainingRoute: typeof TrainingRoute
   UrlRoute: typeof UrlRoute
   AnalyzeIdRoute: typeof AnalyzeIdRoute
   ImageSearchResultRoute: typeof ImageSearchResultRoute
+  ProfileSearchResultRoute: typeof ProfileSearchResultRoute
   ImageSearchIndexRoute: typeof ImageSearchIndexRoute
+  ProfileSearchIndexRoute: typeof ProfileSearchIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -161,13 +174,6 @@ declare module '@tanstack/react-router' {
       path: '/training'
       fullPath: '/training'
       preLoaderRoute: typeof TrainingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile-search': {
-      id: '/profile-search'
-      path: '/profile-search'
-      fullPath: '/profile-search'
-      preLoaderRoute: typeof ProfileSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fraud': {
@@ -191,11 +197,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile-search/': {
+      id: '/profile-search/'
+      path: '/profile-search'
+      fullPath: '/profile-search/'
+      preLoaderRoute: typeof ProfileSearchIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/image-search/': {
       id: '/image-search/'
       path: '/image-search'
       fullPath: '/image-search/'
       preLoaderRoute: typeof ImageSearchIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile-search/result': {
+      id: '/profile-search/result'
+      path: '/profile-search/result'
+      fullPath: '/profile-search/result'
+      preLoaderRoute: typeof ProfileSearchResultRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/image-search/result': {
@@ -219,12 +239,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChatRoute: ChatRoute,
   FraudRoute: FraudRoute,
-  ProfileSearchRoute: ProfileSearchRoute,
   TrainingRoute: TrainingRoute,
   UrlRoute: UrlRoute,
   AnalyzeIdRoute: AnalyzeIdRoute,
   ImageSearchResultRoute: ImageSearchResultRoute,
+  ProfileSearchResultRoute: ProfileSearchResultRoute,
   ImageSearchIndexRoute: ImageSearchIndexRoute,
+  ProfileSearchIndexRoute: ProfileSearchIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
