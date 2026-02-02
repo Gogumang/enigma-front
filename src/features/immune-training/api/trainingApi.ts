@@ -22,6 +22,9 @@ interface MessageResponse {
     turnCount: number;
     hint?: string;
     imageUrl?: string;
+    isCompleted?: boolean;
+    completionReason?: string;
+    userScore?: number;
   };
   error?: string;
 }
@@ -73,7 +76,15 @@ export function useSendMessage() {
     }: {
       sessionId: string;
       message: string;
-    }): Promise<{ scammerMessage: string; turnCount: number; hint?: string; imageUrl?: string }> => {
+    }): Promise<{
+      scammerMessage: string;
+      turnCount: number;
+      hint?: string;
+      imageUrl?: string;
+      isCompleted?: boolean;
+      completionReason?: string;
+      userScore?: number;
+    }> => {
       const response = await apiClient.post<MessageResponse>('/api/training/message', {
         session_id: sessionId,
         message,

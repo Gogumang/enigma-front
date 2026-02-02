@@ -8,6 +8,21 @@ interface Marker {
   label: string;
   description: string;
   intensity?: number;  // 의심 강도 (0-1)
+  algorithm_flags?: string[];  // 해당 영역에서 감지된 알고리즘 이상
+}
+
+interface AlgorithmCheck {
+  name: string;
+  passed: boolean;
+  score: number;
+  description: string;
+}
+
+interface EnsembleDetails {
+  model_confidence?: number;
+  algorithm_score?: number;
+  suspicious_algorithm_count?: number;
+  ensemble_confidence?: number;
 }
 
 interface DeepfakeAnalysisData {
@@ -18,13 +33,21 @@ interface DeepfakeAnalysisData {
   message: string;
   details: {
     simulation?: boolean;
+    model_confidence?: number;
+    algorithm_score?: number;
     [key: string]: unknown;
   };
   analysisReasons?: string[];
   markers?: Marker[];
-  technicalIndicators?: string[];
+  technicalIndicators?: Array<{
+    name: string;
+    description: string;
+    score: number;
+  }>;
   overallAssessment?: string;
   heatmapImage?: string;  // 히트맵 이미지 (base64)
+  algorithmChecks?: AlgorithmCheck[];  // 알고리즘 검사 결과
+  ensembleDetails?: EnsembleDetails;  // 앙상블 상세 정보
 }
 
 interface DeepfakeResponse {
