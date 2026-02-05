@@ -5,7 +5,7 @@ import { useNavigate, Link, useSearch } from '@tanstack/react-router';
 import { usePersonas, useStartSession, useSendMessage, useEndSession } from '@/features/immune-training';
 import type { Persona, Message, Post, SessionData } from '@/entities/persona';
 
-const MAX_TURNS = 10;
+const MAX_TURNS = 5;
 
 // 비속어 필터 목록 (한국어)
 const PROFANITY_LIST = [
@@ -2689,7 +2689,7 @@ export default function TrainingPage() {
         </TopHeader>
         <PersonaSelectScreen>
           <PersonaTitle>사기꾼을 선택하세요</PersonaTitle>
-          <PersonaSubtitle>10번의 대화를 통해 로맨스 스캠 대응력을 테스트합니다</PersonaSubtitle>
+          <PersonaSubtitle>5번의 대화를 통해 로맨스 스캠 대응력을 테스트합니다</PersonaSubtitle>
           <PersonaGrid>
             {personas.map((persona: Persona) => {
               const pConfig = platformConfig[persona.platform];

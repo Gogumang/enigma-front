@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as UrlRouteImport } from './routes/url'
 import { Route as TrainingRouteImport } from './routes/training'
 import { Route as FraudRouteImport } from './routes/fraud'
@@ -16,10 +17,16 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProfileSearchIndexRouteImport } from './routes/profile-search/index'
 import { Route as ImageSearchIndexRouteImport } from './routes/image-search/index'
+import { Route as AnalyzeIndexRouteImport } from './routes/analyze/index'
 import { Route as ProfileSearchResultRouteImport } from './routes/profile-search/result'
 import { Route as ImageSearchResultRouteImport } from './routes/image-search/result'
 import { Route as AnalyzeIdRouteImport } from './routes/analyze/$id'
 
+const VerifyRoute = VerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UrlRoute = UrlRouteImport.update({
   id: '/url',
   path: '/url',
@@ -55,6 +62,11 @@ const ImageSearchIndexRoute = ImageSearchIndexRouteImport.update({
   path: '/image-search/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalyzeIndexRoute = AnalyzeIndexRouteImport.update({
+  id: '/analyze/',
+  path: '/analyze/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileSearchResultRoute = ProfileSearchResultRouteImport.update({
   id: '/profile-search/result',
   path: '/profile-search/result',
@@ -77,9 +89,11 @@ export interface FileRoutesByFullPath {
   '/fraud': typeof FraudRoute
   '/training': typeof TrainingRoute
   '/url': typeof UrlRoute
+  '/verify': typeof VerifyRoute
   '/analyze/$id': typeof AnalyzeIdRoute
   '/image-search/result': typeof ImageSearchResultRoute
   '/profile-search/result': typeof ProfileSearchResultRoute
+  '/analyze/': typeof AnalyzeIndexRoute
   '/image-search/': typeof ImageSearchIndexRoute
   '/profile-search/': typeof ProfileSearchIndexRoute
 }
@@ -89,9 +103,11 @@ export interface FileRoutesByTo {
   '/fraud': typeof FraudRoute
   '/training': typeof TrainingRoute
   '/url': typeof UrlRoute
+  '/verify': typeof VerifyRoute
   '/analyze/$id': typeof AnalyzeIdRoute
   '/image-search/result': typeof ImageSearchResultRoute
   '/profile-search/result': typeof ProfileSearchResultRoute
+  '/analyze': typeof AnalyzeIndexRoute
   '/image-search': typeof ImageSearchIndexRoute
   '/profile-search': typeof ProfileSearchIndexRoute
 }
@@ -102,9 +118,11 @@ export interface FileRoutesById {
   '/fraud': typeof FraudRoute
   '/training': typeof TrainingRoute
   '/url': typeof UrlRoute
+  '/verify': typeof VerifyRoute
   '/analyze/$id': typeof AnalyzeIdRoute
   '/image-search/result': typeof ImageSearchResultRoute
   '/profile-search/result': typeof ProfileSearchResultRoute
+  '/analyze/': typeof AnalyzeIndexRoute
   '/image-search/': typeof ImageSearchIndexRoute
   '/profile-search/': typeof ProfileSearchIndexRoute
 }
@@ -116,9 +134,11 @@ export interface FileRouteTypes {
     | '/fraud'
     | '/training'
     | '/url'
+    | '/verify'
     | '/analyze/$id'
     | '/image-search/result'
     | '/profile-search/result'
+    | '/analyze/'
     | '/image-search/'
     | '/profile-search/'
   fileRoutesByTo: FileRoutesByTo
@@ -128,9 +148,11 @@ export interface FileRouteTypes {
     | '/fraud'
     | '/training'
     | '/url'
+    | '/verify'
     | '/analyze/$id'
     | '/image-search/result'
     | '/profile-search/result'
+    | '/analyze'
     | '/image-search'
     | '/profile-search'
   id:
@@ -140,9 +162,11 @@ export interface FileRouteTypes {
     | '/fraud'
     | '/training'
     | '/url'
+    | '/verify'
     | '/analyze/$id'
     | '/image-search/result'
     | '/profile-search/result'
+    | '/analyze/'
     | '/image-search/'
     | '/profile-search/'
   fileRoutesById: FileRoutesById
@@ -153,15 +177,24 @@ export interface RootRouteChildren {
   FraudRoute: typeof FraudRoute
   TrainingRoute: typeof TrainingRoute
   UrlRoute: typeof UrlRoute
+  VerifyRoute: typeof VerifyRoute
   AnalyzeIdRoute: typeof AnalyzeIdRoute
   ImageSearchResultRoute: typeof ImageSearchResultRoute
   ProfileSearchResultRoute: typeof ProfileSearchResultRoute
+  AnalyzeIndexRoute: typeof AnalyzeIndexRoute
   ImageSearchIndexRoute: typeof ImageSearchIndexRoute
   ProfileSearchIndexRoute: typeof ProfileSearchIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify': {
+      id: '/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof VerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/url': {
       id: '/url'
       path: '/url'
@@ -211,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImageSearchIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analyze/': {
+      id: '/analyze/'
+      path: '/analyze'
+      fullPath: '/analyze/'
+      preLoaderRoute: typeof AnalyzeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile-search/result': {
       id: '/profile-search/result'
       path: '/profile-search/result'
@@ -241,9 +281,11 @@ const rootRouteChildren: RootRouteChildren = {
   FraudRoute: FraudRoute,
   TrainingRoute: TrainingRoute,
   UrlRoute: UrlRoute,
+  VerifyRoute: VerifyRoute,
   AnalyzeIdRoute: AnalyzeIdRoute,
   ImageSearchResultRoute: ImageSearchResultRoute,
   ProfileSearchResultRoute: ProfileSearchResultRoute,
+  AnalyzeIndexRoute: AnalyzeIndexRoute,
   ImageSearchIndexRoute: ImageSearchIndexRoute,
   ProfileSearchIndexRoute: ProfileSearchIndexRoute,
 }

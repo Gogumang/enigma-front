@@ -54,7 +54,9 @@ const ResultImageContainer = styled.div`
 `;
 
 const ResultImage = styled.img`
-  width: 100%;
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
   display: block;
   border-radius: 16px;
 `;
@@ -415,8 +417,8 @@ export default function DeepfakeResultPage() {
       <Container>
         {result.imageData && (
           <ResultImageContainer>
-            <ResultImage src={result.imageData} alt="분석된 이미지" />
-            {result.data.markers && result.data.markers.length > 0 && (
+            <ResultImage src={result.imageData} alt={result.type === 'video' ? '비디오 썸네일' : '분석된 이미지'} />
+            {result.type === 'image' && result.data.markers && result.data.markers.length > 0 && (
               <MarkerOverlay>
                 {result.data.markers.map((marker) => (
                   <MarkerDot

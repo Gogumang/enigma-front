@@ -6,7 +6,7 @@ import { keyframes } from '@emotion/react';
 import { useRouter } from 'next/navigation';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-const MAX_TURNS = 10;
+const MAX_TURNS = 5;
 
 interface Persona {
   id: string;
@@ -1166,7 +1166,7 @@ export default function TrainingPage() {
         </TopHeader>
         <PersonaSelectScreen>
           <PersonaTitle>스캐머를 선택하세요</PersonaTitle>
-          <PersonaSubtitle>10번의 대화를 통해 로맨스 스캠 대응력을 테스트합니다</PersonaSubtitle>
+          <PersonaSubtitle>5번의 대화를 통해 로맨스 스캠 대응력을 테스트합니다</PersonaSubtitle>
           <PersonaGrid>
             {personas.map((persona) => {
               const p = personaProfiles[persona.id];

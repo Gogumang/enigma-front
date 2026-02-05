@@ -155,6 +155,24 @@ const NavButton = styled.button`
   }
 `;
 
+const NavButtonSecondary = styled.button`
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+  }
+`;
+
 // Hero Section with animated gradient background
 const HeroWrapper = styled.div`
   position: relative;
@@ -667,6 +685,33 @@ const TinderIcon = () => (
   </svg>
 );
 
+// Service icons for URL check and Fraud check
+const UrlLinkIcon = () => (
+  <svg viewBox="0 0 120 120" fill="none" style={{ width: 120, height: 120 }}>
+    <defs>
+      <linearGradient id="urlGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#ff9500"/>
+        <stop offset="100%" stopColor="#ff6b00"/>
+      </linearGradient>
+    </defs>
+    <circle cx="60" cy="60" r="50" fill="url(#urlGrad)" />
+    <path d="M52 68c-4.4 0-8-3.6-8-8s3.6-8 8-8h8v-4h-8c-6.6 0-12 5.4-12 12s5.4 12 12 12h8v-4h-8zm4-6h8v-4h-8v4zm12-14h-8v4h8c4.4 0 8 3.6 8 8s-3.6 8-8 8h-8v4h8c6.6 0 12-5.4 12-12s-5.4-12-12-12z" fill="#fff"/>
+  </svg>
+);
+
+const FraudShieldIcon = () => (
+  <svg viewBox="0 0 120 120" fill="none" style={{ width: 120, height: 120 }}>
+    <defs>
+      <linearGradient id="fraudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#f04452"/>
+        <stop offset="100%" stopColor="#c91f3a"/>
+      </linearGradient>
+    </defs>
+    <circle cx="60" cy="60" r="50" fill="url(#fraudGrad)" />
+    <path d="M60 30L36 42v18c0 14.5 10.2 28 24 32 13.8-4 24-17.5 24-32V42L60 30zm0 8l16 8v14c0 10.4-7 20-16 23-9-3-16-12.6-16-23V46l16-8zm-4 20v8h8v-8h-8zm0 12v8h8v-8h-8z" fill="#fff"/>
+  </svg>
+);
+
 const messengers = [
   { id: 'kakao', name: '카카오톡', Icon: KakaoIcon },
   { id: 'instagram', name: '인스타그램', Icon: InstagramIcon },
@@ -679,16 +724,18 @@ const messengers = [
 ] as const;
 
 // Service data - 4 services in 2x2 grid with 3dicons.co Clay 3D icons (CC0 License)
-const services = [
+type ServiceItem = {
+  to: string;
+  title: string;
+  iconUrl?: string;
+  Icon?: React.FC;
+};
+
+const services: ServiceItem[] = [
   {
     to: '/chat',
     title: '대화 분석',
     iconUrl: '/icons/chat-bubble.png',
-  },
-  {
-    to: '/training',
-    title: '면역 훈련',
-    iconUrl: '/icons/mobile.png',
   },
   {
     to: '/image-search',
@@ -700,12 +747,21 @@ const services = [
     title: '프로필 검색',
     iconUrl: '/icons/megaphone.png',
   },
+  {
+    to: '/verify',
+    title: '사기 검증',
+    iconUrl: '/icons/mobile.png',
+  },
 ];
 
-function ServiceCardComponent({ service }: { service: typeof services[0] }) {
+function ServiceCardComponent({ service }: { service: ServiceItem }) {
   return (
     <ServiceCard to={service.to}>
-      <IconImage src={service.iconUrl} alt={service.title} />
+      {service.iconUrl ? (
+        <IconImage src={service.iconUrl} alt={service.title} />
+      ) : service.Icon ? (
+        <service.Icon />
+      ) : null}
       <ServiceTitle>{service.title}</ServiceTitle>
     </ServiceCard>
   );
@@ -755,7 +811,10 @@ export default function HomePage() {
             <ThemeToggle onClick={toggleTheme} aria-label="Toggle theme">
               {isDarkMode ? <SunIcon /> : <MoonIcon />}
             </ThemeToggle>
-            <NavButton onClick={() => setShowModal(true)}>
+            <NavButtonSecondary onClick={() => setShowTrainingModal(true)}>
+              면역 훈련
+            </NavButtonSecondary>
+            <NavButton onClick={() => navigate({ to: '/analyze' })}>
               분석 시작
             </NavButton>
           </NavActions>
@@ -776,14 +835,7 @@ export default function HomePage() {
         </HeroSection>
         <ServiceGrid>
           {services.map((service) => (
-            service.to === '/training' ? (
-              <TrainingServiceCard key={service.to} onClick={() => setShowTrainingModal(true)}>
-                <IconImage src={service.iconUrl} alt={service.title} />
-                <ServiceTitle>{service.title}</ServiceTitle>
-              </TrainingServiceCard>
-            ) : (
-              <ServiceCardComponent key={service.to} service={service} />
-            )
+            <ServiceCardComponent key={service.to} service={service} />
           ))}
         </ServiceGrid>
       </HeroWrapper>
@@ -870,6 +922,7 @@ export default function HomePage() {
           })}
         </PersonaGrid>
       </Modal>
+
     </Container>
   );
 }

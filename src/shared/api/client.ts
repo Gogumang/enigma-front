@@ -64,10 +64,11 @@ export const apiClient = {
     return data;
   },
 
-  async postFormData<T>(endpoint: string, formData: FormData): Promise<T> {
+  async postFormData<T>(endpoint: string, formData: FormData, timeout?: number): Promise<T> {
     const response = await fetchWithTimeout(`${API_URL}${endpoint}`, {
       method: 'POST',
       body: formData,
+      timeout: timeout,
     });
     const data = await response.json();
 

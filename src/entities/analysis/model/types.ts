@@ -50,13 +50,69 @@ export interface Analysis {
 
 export interface UrlCheckResult {
   status: 'safe' | 'warning' | 'danger';
+  originalUrl: string;
+  finalUrl: string;
   domain: string;
-  https: boolean;
-  warnings: string[];
+  isHttps: boolean;
+  isShortUrl: boolean;
+  riskScore: number;
+  suspiciousPatterns: string[];
+  message: string;
+  expansion?: {
+    redirectCount: number;
+    redirectChain: string[];
+  };
+}
+
+export interface PatternAnalysis {
+  isValid: boolean;
+  type?: string;
+  warnings?: string[];
+  bankName?: string;
+}
+
+export interface AdditionalLink {
+  name: string;
+  url: string;
+  description: string;
 }
 
 export interface FraudCheckResult {
-  safe: boolean;
-  type: 'PHONE' | 'ACCOUNT' | 'EMAIL';
-  records: Array<{ type: string; date: string; desc: string }>;
+  status: 'safe' | 'danger';
+  type: 'PHONE' | 'ACCOUNT';
+  value: string;
+  displayValue: string;
+  message: string;
+  patternAnalysis?: PatternAnalysis;
+  bank?: string;
+  totalRecords: number;
+  recommendations: string[];
+  additionalLinks: AdditionalLink[];
+}
+
+export interface VerifyResult {
+  detectedType: 'URL' | 'PHONE' | 'ACCOUNT';
+  detectedTypeLabel: string;
+  status: 'safe' | 'warning' | 'danger';
+  inputValue: string;
+  message: string;
+  recommendations: string[];
+  // URL specific
+  originalUrl?: string;
+  finalUrl?: string;
+  domain?: string;
+  isHttps?: boolean;
+  isShortUrl?: boolean;
+  riskScore?: number;
+  suspiciousPatterns?: string[];
+  expansion?: {
+    redirectCount: number;
+    redirectChain: string[];
+  };
+  // Phone/Account specific
+  value?: string;
+  displayValue?: string;
+  patternAnalysis?: PatternAnalysis;
+  totalRecords?: number;
+  additionalLinks?: AdditionalLink[];
 }

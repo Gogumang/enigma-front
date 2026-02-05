@@ -63,6 +63,45 @@ export interface DeepfakeResult {
   imageData: string;
 }
 
+// 비디오에서 썸네일 추출
+async function extractVideoThumbnail(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+
+    video.onloadeddata = () => {
+      // 0.5초 지점으로 이동 (첫 프레임이 검은색일 수 있음)
+      video.currentTime = Math.min(0.5, video.duration / 2);
+    };
+
+    video.onseeked = () => {
+      // 캔버스에 비디오 프레임 그리기
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // 이미지 데이터 URL로 변환
+      const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+      // 정리
+      URL.revokeObjectURL(video.src);
+      resolve(thumbnailUrl);
+    };
+
+    video.onerror = () => {
+      // 실패 시 기본 플레이스홀더
+      resolve('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect fill="%23333" width="400" height="300"/><text x="50%" y="50%" fill="%23fff" text-anchor="middle" dy=".3em">Video</text></svg>');
+    };
+
+    video.src = URL.createObjectURL(file);
+  });
+}
+
 export function useDeepfakeAnalysis() {
   return useMutation({
     mutationFn: async ({ file, isVideo }: { file: File; isVideo: boolean }): Promise<DeepfakeResult> => {
@@ -73,15 +112,24 @@ export function useDeepfakeAnalysis() {
         ? '/api/deepfake/analyze/video'
         : '/api/deepfake/analyze/image';
 
-      const response = await apiClient.postFormData<DeepfakeResponse>(endpoint, formData);
+      // 비디오는 분석 시간이 오래 걸리므로 타임아웃 3분으로 설정
+      const timeout = isVideo ? 180000 : 60000;
+      const response = await apiClient.postFormData<DeepfakeResponse>(endpoint, formData, timeout);
 
       if (response.success && response.data) {
-        // Read file as data URL
-        const imageData = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
+        let imageData: string;
+
+        if (isVideo) {
+          // 비디오: 첫 프레임을 썸네일로 추출
+          imageData = await extractVideoThumbnail(file);
+        } else {
+          // 이미지: 그대로 읽기
+          imageData = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(file);
+          });
+        }
 
         return {
           type: isVideo ? 'video' : 'image',

@@ -338,6 +338,40 @@ const ProfileIcon = () => (
   </svg>
 );
 
+const UrlIcon = () => (
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+    <ellipse cx="32" cy="54" rx="20" ry="4" fill="#e8ebf0"/>
+    <rect x="10" y="10" width="44" height="38" rx="8" fill="#f04452"/>
+    <rect x="10" y="10" width="44" height="38" rx="8" fill="url(#urlGrad)"/>
+    <rect x="16" y="18" width="32" height="4" rx="2" fill="#fff" opacity="0.9"/>
+    <circle cx="24" cy="34" r="6" fill="#fff" opacity="0.7"/>
+    <circle cx="40" cy="34" r="6" fill="#fff" opacity="0.7"/>
+    <path d="M30 34H34" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity="0.9"/>
+    <defs>
+      <linearGradient id="urlGrad" x1="10" y1="10" x2="54" y2="48">
+        <stop stopColor="#ff6b6b"/>
+        <stop offset="1" stopColor="#f04452"/>
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const FraudIcon = () => (
+  <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+    <ellipse cx="32" cy="54" rx="20" ry="4" fill="#e8ebf0"/>
+    <path d="M32 8L10 18V32C10 44 20 52 32 56C44 52 54 44 54 32V18L32 8Z" fill="#f97316"/>
+    <path d="M32 8L10 18V32C10 44 20 52 32 56C44 52 54 44 54 32V18L32 8Z" fill="url(#fraudGrad)"/>
+    <path d="M32 22V34" stroke="#fff" strokeWidth="4" strokeLinecap="round"/>
+    <circle cx="32" cy="42" r="3" fill="#fff"/>
+    <defs>
+      <linearGradient id="fraudGrad" x1="10" y1="8" x2="54" y2="56">
+        <stop stopColor="#fb923c"/>
+        <stop offset="1" stopColor="#f97316"/>
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 // Messenger Icons
 const KakaoIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
@@ -460,6 +494,18 @@ export default function Home() {
             <IconBox><ProfileIcon /></IconBox>
             <CardTitle>프로필 검색</CardTitle>
             <CardDesc>신원 확인</CardDesc>
+          </Card>
+
+          <Card href="/url">
+            <IconBox><UrlIcon /></IconBox>
+            <CardTitle>URL 검사</CardTitle>
+            <CardDesc>피싱 탐지</CardDesc>
+          </Card>
+
+          <Card href="/fraud">
+            <IconBox><FraudIcon /></IconBox>
+            <CardTitle>사기 조회</CardTitle>
+            <CardDesc>번호/계좌</CardDesc>
           </Card>
         </CardGrid>
       </Section>

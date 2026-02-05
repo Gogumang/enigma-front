@@ -2,9 +2,15 @@
 
 import { useState } from 'react';
 import styled from '@emotion/styled';
+import { keyframes } from '@emotion/react';
 import PageLayout from '@/components/PageLayout';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
 
 const TypeTabs = styled.div`
   display: flex;
@@ -27,10 +33,19 @@ const TypeTab = styled.button<{ $active: boolean }>`
   align-items: center;
   gap: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
 `;
 
 const TabIcon = styled.span`
-  font-size: 20px;
+  font-size: 24px;
+`;
+
+const InputGroup = styled.div`
+  margin-bottom: 16px;
 `;
 
 const Input = styled.input`
@@ -41,7 +56,6 @@ const Input = styled.input`
   background: #fff;
   font-size: 16px;
   color: #191f28;
-  margin-bottom: 16px;
 
   &:focus {
     outline: none;
@@ -50,6 +64,23 @@ const Input = styled.input`
 
   &::placeholder {
     color: #adb5bd;
+  }
+`;
+
+const Select = styled.select`
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #e5e8eb;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 16px;
+  color: #191f28;
+  margin-top: 12px;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: #f04452;
   }
 `;
 
@@ -63,6 +94,10 @@ const Button = styled.button`
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 
   &:active {
     background: #d63341;
@@ -74,90 +109,66 @@ const Button = styled.button`
   }
 `;
 
-const ResultCard = styled.div<{ $safe: boolean }>`
+const Spinner = styled.div`
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: ${spin} 0.8s linear infinite;
+`;
+
+const ResultCard = styled.div<{ $status: 'safe' | 'danger' }>`
   margin-top: 24px;
   padding: 28px 24px;
   text-align: center;
   border-radius: 16px;
-  background: ${props => props.$safe ? '#e8f7f0' : '#ffebee'};
+  background: ${props => props.$status === 'safe' ? '#e8f7f0' : '#ffebee'};
 `;
 
 const ResultIcon = styled.div`
-  font-size: 40px;
+  font-size: 48px;
   margin-bottom: 12px;
 `;
 
-const ResultTitle = styled.div<{ $safe: boolean }>`
-  font-size: 18px;
+const ResultTitle = styled.div<{ $status: 'safe' | 'danger' }>`
+  font-size: 20px;
   font-weight: 700;
-  color: ${props => props.$safe ? '#20c997' : '#f04452'};
-  margin-bottom: 4px;
+  color: ${props => props.$status === 'safe' ? '#20c997' : '#f04452'};
+  margin-bottom: 8px;
 `;
 
 const ResultDesc = styled.div`
   font-size: 14px;
   color: #6b7684;
-`;
-
-const RecordList = styled.div`
-  margin-top: 16px;
-`;
-
-const RecordItem = styled.div`
-  padding: 16px;
-  background: #fff;
-  border-radius: 12px;
-  margin-bottom: 8px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const RecordHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-`;
-
-const RecordBadge = styled.span`
-  background: #ffebee;
-  color: #f04452;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-`;
-
-const RecordDate = styled.span`
-  font-size: 13px;
-  color: #8b95a1;
-`;
-
-const RecordDesc = styled.p`
-  margin: 0;
-  font-size: 14px;
-  color: #191f28;
   line-height: 1.5;
 `;
 
-const InfoCard = styled.div`
+const Section = styled.div`
   background: #fff;
   border-radius: 16px;
   padding: 20px;
-  margin-top: 20px;
+  margin-top: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 `;
 
-const InfoTitle = styled.h4`
+const SectionTitle = styled.h4`
   font-size: 15px;
   font-weight: 600;
   color: #191f28;
   margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
-const InfoItem = styled.div`
+const PatternInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const PatternItem = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -169,36 +180,163 @@ const InfoItem = styled.div`
   }
 `;
 
-const InfoLabel = styled.span`
+const PatternLabel = styled.span`
   font-size: 14px;
   color: #8b95a1;
 `;
 
-const InfoValue = styled.a`
+const PatternValue = styled.span<{ $warning?: boolean }>`
   font-size: 14px;
-  color: #3182f6;
   font-weight: 600;
-  text-decoration: none;
+  color: ${props => props.$warning ? '#ff9500' : '#191f28'};
 `;
 
-type CheckType = 'PHONE' | 'ACCOUNT' | 'EMAIL';
+const WarningList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+`;
 
-interface Result {
-  safe: boolean;
-  type: CheckType;
-  records: Array<{ type: string; date: string; desc: string }>;
+const WarningItem = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: #fff8e6;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #333;
+`;
+
+const RecommendationList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const RecommendationItem = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+`;
+
+const LinkList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const LinkItem = styled.a`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #eef0f2;
+    transform: translateX(4px);
+  }
+`;
+
+const LinkIcon = styled.span`
+  font-size: 20px;
+`;
+
+const LinkInfo = styled.div`
+  flex: 1;
+`;
+
+const LinkName = styled.div`
+  font-size: 14px;
+  font-weight: 600;
+  color: #191f28;
+  margin-bottom: 2px;
+`;
+
+const LinkDesc = styled.div`
+  font-size: 12px;
+  color: #8b95a1;
+`;
+
+const LinkArrow = styled.span`
+  color: #adb5bd;
+`;
+
+type CheckType = 'PHONE' | 'ACCOUNT';
+
+interface PatternAnalysis {
+  isValid: boolean;
+  type?: string;
+  warnings?: string[];
+  bankName?: string;
 }
+
+interface Source {
+  source: string;
+  found: boolean;
+  records: Array<{ content: string; source: string }>;
+  searchUrl?: string;
+  guideUrl?: string;
+  reportUrl?: string;
+  hotline?: string;
+}
+
+interface AdditionalLink {
+  name: string;
+  url: string;
+  description: string;
+}
+
+interface FraudResult {
+  status: 'safe' | 'danger';
+  type: CheckType;
+  value: string;
+  displayValue: string;
+  message: string;
+  patternAnalysis?: PatternAnalysis;
+  bank?: string;
+  sources: Source[];
+  totalRecords: number;
+  recommendations: string[];
+  additionalLinks: AdditionalLink[];
+}
+
+const BANKS = [
+  { code: '', name: '은행 선택 (선택사항)' },
+  { code: 'KB', name: '국민은행' },
+  { code: 'SHINHAN', name: '신한은행' },
+  { code: 'WOORI', name: '우리은행' },
+  { code: 'HANA', name: '하나은행' },
+  { code: 'NH', name: '농협은행' },
+  { code: 'IBK', name: '기업은행' },
+  { code: 'KAKAO', name: '카카오뱅크' },
+  { code: 'TOSS', name: '토스뱅크' },
+  { code: 'KBANK', name: '케이뱅크' },
+  { code: 'SC', name: 'SC제일은행' },
+  { code: 'POST', name: '우체국' },
+];
 
 export default function FraudPage() {
   const [type, setType] = useState<CheckType>('PHONE');
   const [value, setValue] = useState('');
+  const [bankCode, setBankCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<Result | null>(null);
+  const [result, setResult] = useState<FraudResult | null>(null);
 
   const config: Record<CheckType, { icon: string; label: string; placeholder: string }> = {
-    PHONE: { icon: '📞', label: '전화번호', placeholder: '01012345678' },
-    ACCOUNT: { icon: '🏦', label: '계좌번호', placeholder: '1234567890123' },
-    EMAIL: { icon: '📧', label: '이메일', placeholder: 'email@example.com' },
+    PHONE: { icon: '📞', label: '전화번호', placeholder: '010-1234-5678' },
+    ACCOUNT: { icon: '🏦', label: '계좌번호', placeholder: '123-456-789012' },
   };
 
   const check = async () => {
@@ -211,22 +349,15 @@ export default function FraudPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type,
-          value: value.replace(/-/g, '').trim(),
+          value: value.replace(/-/g, '').replace(/ /g, '').trim(),
+          bank_code: type === 'ACCOUNT' ? bankCode : undefined,
         }),
       });
 
       const data = await response.json();
 
       if (data.success && data.data) {
-        setResult({
-          safe: data.data.status === 'safe',
-          type,
-          records: (data.data.records || []).map((r: { type: string; date: string; description: string }) => ({
-            type: r.type,
-            date: r.date,
-            desc: r.description,
-          })),
-        });
+        setResult(data.data);
       } else {
         alert(data.error || '조회 실패');
       }
@@ -237,73 +368,136 @@ export default function FraudPage() {
     }
   };
 
+  const getLinkIcon = (name: string) => {
+    if (name.includes('더치트')) return '🔍';
+    if (name.includes('경찰')) return '👮';
+    if (name.includes('금융')) return '🏛️';
+    if (name.includes('국가정보원')) return '🛡️';
+    return '🔗';
+  };
+
   return (
     <PageLayout title="사기 이력 조회">
       <TypeTabs>
         {(Object.keys(config) as CheckType[]).map(t => (
-          <TypeTab key={t} $active={type === t} onClick={() => { setType(t); setValue(''); setResult(null); }}>
+          <TypeTab
+            key={t}
+            $active={type === t}
+            onClick={() => { setType(t); setValue(''); setResult(null); setBankCode(''); }}
+          >
             <TabIcon>{config[t].icon}</TabIcon>
             {config[t].label}
           </TypeTab>
         ))}
       </TypeTabs>
 
-      <Input
-        value={value}
-        onChange={e => setValue(e.target.value)}
-        placeholder={config[type].placeholder}
-        onKeyDown={e => e.key === 'Enter' && check()}
-      />
+      <InputGroup>
+        <Input
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          placeholder={config[type].placeholder}
+          onKeyDown={e => e.key === 'Enter' && !loading && check()}
+        />
+        {type === 'ACCOUNT' && (
+          <Select value={bankCode} onChange={e => setBankCode(e.target.value)}>
+            {BANKS.map(bank => (
+              <option key={bank.code} value={bank.code}>{bank.name}</option>
+            ))}
+          </Select>
+        )}
+      </InputGroup>
 
       <Button onClick={check} disabled={loading || !value.trim()}>
-        {loading ? '조회 중...' : '조회하기'}
+        {loading ? <><Spinner /> 조회 중...</> : '조회하기'}
       </Button>
 
       {result && (
         <>
-          <ResultCard $safe={result.safe}>
-            <ResultIcon>{result.safe ? '✅' : '🚨'}</ResultIcon>
-            <ResultTitle $safe={result.safe}>
-              {result.safe ? '사기 이력 없음' : '사기 이력 발견'}
+          <ResultCard $status={result.status}>
+            <ResultIcon>{result.status === 'safe' ? '✅' : '🚨'}</ResultIcon>
+            <ResultTitle $status={result.status}>
+              {result.status === 'safe' ? '사기 이력 없음' : '사기 이력 발견!'}
             </ResultTitle>
-            <ResultDesc>
-              {result.safe
-                ? '최근 3개월 내 신고된 이력이 없어요'
-                : '이 정보로 사기 피해가 신고됐어요'}
-            </ResultDesc>
+            <ResultDesc>{result.message}</ResultDesc>
           </ResultCard>
 
-          {result.records.length > 0 && (
-            <RecordList>
-              {result.records.map((r, i) => (
-                <RecordItem key={i}>
-                  <RecordHeader>
-                    <RecordBadge>{r.type}</RecordBadge>
-                    <RecordDate>{r.date}</RecordDate>
-                  </RecordHeader>
-                  <RecordDesc>{r.desc}</RecordDesc>
-                </RecordItem>
-              ))}
-            </RecordList>
+          {/* 번호/계좌 분석 */}
+          {result.patternAnalysis && (
+            <Section>
+              <SectionTitle>📊 {type === 'PHONE' ? '번호' : '계좌'} 분석</SectionTitle>
+              <PatternInfo>
+                <PatternItem>
+                  <PatternLabel>입력값</PatternLabel>
+                  <PatternValue>{result.displayValue}</PatternValue>
+                </PatternItem>
+                {result.patternAnalysis.type && (
+                  <PatternItem>
+                    <PatternLabel>유형</PatternLabel>
+                    <PatternValue>{result.patternAnalysis.type}</PatternValue>
+                  </PatternItem>
+                )}
+                {result.bank && (
+                  <PatternItem>
+                    <PatternLabel>은행</PatternLabel>
+                    <PatternValue>{result.bank}</PatternValue>
+                  </PatternItem>
+                )}
+                <PatternItem>
+                  <PatternLabel>유효성</PatternLabel>
+                  <PatternValue $warning={!result.patternAnalysis.isValid}>
+                    {result.patternAnalysis.isValid ? '✓ 유효함' : '⚠️ 유효하지 않음'}
+                  </PatternValue>
+                </PatternItem>
+              </PatternInfo>
+
+              {result.patternAnalysis.warnings && result.patternAnalysis.warnings.length > 0 && (
+                <WarningList>
+                  {result.patternAnalysis.warnings.map((warning, i) => (
+                    <WarningItem key={i}>
+                      <span>⚠️</span>
+                      {warning}
+                    </WarningItem>
+                  ))}
+                </WarningList>
+              )}
+            </Section>
+          )}
+
+          {/* 권장 사항 */}
+          {result.recommendations.length > 0 && (
+            <Section>
+              <SectionTitle>💡 권장 사항</SectionTitle>
+              <RecommendationList>
+                {result.recommendations.map((rec, i) => (
+                  <RecommendationItem key={i}>
+                    <span>•</span>
+                    {rec}
+                  </RecommendationItem>
+                ))}
+              </RecommendationList>
+            </Section>
+          )}
+
+          {/* 추가 확인 링크 */}
+          {result.additionalLinks && result.additionalLinks.length > 0 && (
+            <Section>
+              <SectionTitle>🔗 직접 확인하기</SectionTitle>
+              <LinkList>
+                {result.additionalLinks.map((link, i) => (
+                  <LinkItem key={i} href={link.url} target="_blank" rel="noopener noreferrer">
+                    <LinkIcon>{getLinkIcon(link.name)}</LinkIcon>
+                    <LinkInfo>
+                      <LinkName>{link.name}</LinkName>
+                      <LinkDesc>{link.description}</LinkDesc>
+                    </LinkInfo>
+                    <LinkArrow>→</LinkArrow>
+                  </LinkItem>
+                ))}
+              </LinkList>
+            </Section>
           )}
         </>
       )}
-
-      <InfoCard>
-        <InfoTitle>피해 신고 연락처</InfoTitle>
-        <InfoItem>
-          <InfoLabel>경찰청 사이버범죄</InfoLabel>
-          <InfoValue href="https://ecrm.police.go.kr" target="_blank">ecrm.police.go.kr</InfoValue>
-        </InfoItem>
-        <InfoItem>
-          <InfoLabel>금융감독원</InfoLabel>
-          <InfoValue href="tel:1332">1332</InfoValue>
-        </InfoItem>
-        <InfoItem>
-          <InfoLabel>인터넷진흥원</InfoLabel>
-          <InfoValue href="tel:118">118</InfoValue>
-        </InfoItem>
-      </InfoCard>
     </PageLayout>
   );
 }

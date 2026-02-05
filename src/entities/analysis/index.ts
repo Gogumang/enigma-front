@@ -5,4 +5,5 @@ export type {
   Analysis,
   UrlCheckResult,
   FraudCheckResult,
+  VerifyResult,
 } from './model/types';

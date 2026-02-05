@@ -75,6 +75,8 @@ const ImageWrapper = styled.div`
 
 const ResultImage = styled.img`
   max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
   display: block;
   border-radius: 16px;
 `;
@@ -528,7 +530,7 @@ export default function ImageResultPage() {
       <Container>
         {result.imageData && (
           <ResultImageContainer>
-            {heatmapImage && (
+            {result.type === 'image' && heatmapImage && (
               <ImageToggle>
                 <ToggleButton $active={!showHeatmap} onClick={() => setShowHeatmap(false)}>
                   원본
@@ -541,9 +543,9 @@ export default function ImageResultPage() {
             <ImageWrapper onClick={() => setSelectedMarker(null)}>
               <ResultImage
                 src={showHeatmap && heatmapImage ? `data:image/jpeg;base64,${heatmapImage}` : result.imageData}
-                alt="분석된 이미지"
+                alt={result.type === 'video' ? '비디오 썸네일' : '분석된 이미지'}
               />
-              {!showHeatmap && markers.map((marker, index) => (
+              {result.type === 'image' && !showHeatmap && markers.map((marker, index) => (
                 <MarkerDot
                   key={marker.id}
                   $x={marker.x}
@@ -557,7 +559,7 @@ export default function ImageResultPage() {
                   <MarkerNumber>{index + 1}</MarkerNumber>
                 </MarkerDot>
               ))}
-              {!showHeatmap && selectedMarker !== null && markers.find(m => m.id === selectedMarker) && (
+              {result.type === 'image' && !showHeatmap && selectedMarker !== null && markers.find(m => m.id === selectedMarker) && (
                 <MarkerTooltip
                   $x={markers.find(m => m.id === selectedMarker)!.x}
                   $y={markers.find(m => m.id === selectedMarker)!.y}
