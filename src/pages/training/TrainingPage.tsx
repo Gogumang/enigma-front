@@ -511,6 +511,88 @@ const MiniProfileInfo = styled.div`
   line-height: 1.5;
 `;
 
+// ========== 모바일 접이식 프로필 ==========
+const MobileProfileBanner = styled.div<{ $platform?: string }>`
+  display: none;
+  background: ${props => ['facebook', 'instagram', 'x'].includes(props.$platform || '') ? '#1e1e1e' : 'var(--bg-card)'};
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border: ${props => ['facebook', 'instagram', 'x'].includes(props.$platform || '') ? '1px solid rgba(255,255,255,0.08)' : '1px solid var(--border-color)'};
+
+  @media (max-width: 1100px) {
+    display: block;
+  }
+`;
+
+const MobileProfileHeader = styled.button<{ $platform?: string }>`
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+`;
+
+const MobileProfileAvatar = styled.div<{ $image?: string }>`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: ${props => props.$image ? `url(${props.$image})` : '#666'};
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+`;
+
+const MobileProfileMeta = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const MobileProfileNameText = styled.div<{ $platform?: string }>`
+  font-size: 15px;
+  font-weight: 600;
+  color: ${props => ['facebook', 'instagram', 'x'].includes(props.$platform || '') ? '#fff' : 'var(--text-primary)'};
+`;
+
+const MobileProfileSub = styled.div<{ $platform?: string }>`
+  font-size: 12px;
+  color: ${props => ['facebook', 'instagram', 'x'].includes(props.$platform || '') ? 'rgba(255,255,255,0.5)' : 'var(--text-tertiary)'};
+  margin-top: 2px;
+`;
+
+const MobileProfileChevron = styled.div<{ $expanded: boolean; $platform?: string }>`
+  color: ${props => ['facebook', 'instagram', 'x'].includes(props.$platform || '') ? 'rgba(255,255,255,0.4)' : 'var(--text-tertiary)'};
+  transition: transform 0.25s ease;
+  transform: rotate(${props => props.$expanded ? '180deg' : '0deg'});
+  flex-shrink: 0;
+`;
+
+const MobileProfileBody = styled.div<{ $expanded: boolean; $platform?: string }>`
+  max-height: ${props => props.$expanded ? '300px' : '0'};
+  opacity: ${props => props.$expanded ? 1 : 0};
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease;
+  padding: ${props => props.$expanded ? '0 16px 16px' : '0 16px'};
+  border-top: ${props => props.$expanded
+    ? (['facebook', 'instagram', 'x'].includes(props.$platform || '')
+      ? '1px solid rgba(255,255,255,0.08)'
+      : '1px solid var(--border-color)')
+    : 'none'};
+`;
+
+const MobileProfileRow = styled.div<{ $platform?: string }>`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  color: ${props => ['facebook', 'instagram', 'x'].includes(props.$platform || '') ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)'};
+`;
+
 // ========== 중앙 피드 영역 (Facebook 스타일) ==========
 const FeedArea = styled.div<{ $platform?: string }>`
   flex: 1;
@@ -2360,6 +2442,9 @@ export default function TrainingPage() {
   // 모바일 채팅 토글 (SNS 플랫폼)
   const [showMobileChat, setShowMobileChat] = useState(false);
 
+  // 모바일 프로필 접기/펼치기
+  const [profileExpanded, setProfileExpanded] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const targetEmail = 'user@enigma.kr';
   const targetPassword = '••••••••••';
@@ -3038,6 +3123,54 @@ export default function TrainingPage() {
 
         {/* 중앙 피드 - 메신저/데이팅 앱에서는 숨김 */}
         <FeedArea $platform={currentPlatform}>
+          {/* 모바일: 접이식 프로필 배너 (1100px 이하에서만 표시) */}
+          {selectedPersona && (
+            <MobileProfileBanner $platform={currentPlatform}>
+              <MobileProfileHeader
+                $platform={currentPlatform}
+                onClick={() => setProfileExpanded(prev => !prev)}
+              >
+                <MobileProfileAvatar $image={selectedPersona.profile_photo} />
+                <MobileProfileMeta>
+                  <MobileProfileNameText $platform={currentPlatform}>
+                    {selectedPersona.name}
+                  </MobileProfileNameText>
+                  <MobileProfileSub $platform={currentPlatform}>
+                    {selectedPersona.occupation}
+                  </MobileProfileSub>
+                </MobileProfileMeta>
+                <MobileProfileChevron $expanded={profileExpanded} $platform={currentPlatform}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </MobileProfileChevron>
+              </MobileProfileHeader>
+
+              <MobileProfileBody $expanded={profileExpanded} $platform={currentPlatform}>
+                <MobileProfileRow $platform={currentPlatform}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  <span>{selectedPersona.occupation}</span>
+                </MobileProfileRow>
+                <MobileProfileRow $platform={currentPlatform}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                  </svg>
+                  <span>{currentPlatformConfig?.name || selectedPersona.platform}</span>
+                </MobileProfileRow>
+                <MobileProfileRow $platform={currentPlatform}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                  <span>싱글</span>
+                </MobileProfileRow>
+              </MobileProfileBody>
+            </MobileProfileBanner>
+          )}
+
           {posts.map((post) => (
             <PostCard key={post.id} $platform={currentPlatform}>
               <PostHeader>
@@ -3171,9 +3304,12 @@ export default function TrainingPage() {
         {/* 모바일 채팅 열기 FAB (SNS 플랫폼) */}
         {isSocialMediaStyle && !showMobileChat && (
           <FloatingChatButton $platform={currentPlatform} onClick={() => setShowMobileChat(true)}>
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
+            <span style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontWeight: 700,
+              fontSize: '24px',
+              lineHeight: 1,
+            }}>E</span>
           </FloatingChatButton>
         )}
 

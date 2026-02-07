@@ -9,24 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as UrlRouteImport } from './routes/url'
 import { Route as TrainingRouteImport } from './routes/training'
 import { Route as FraudRouteImport } from './routes/fraud'
 import { Route as ChatRouteImport } from './routes/chat'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VerifyIndexRouteImport } from './routes/verify/index'
 import { Route as ProfileSearchIndexRouteImport } from './routes/profile-search/index'
 import { Route as ImageSearchIndexRouteImport } from './routes/image-search/index'
 import { Route as AnalyzeIndexRouteImport } from './routes/analyze/index'
+import { Route as VerifyResultRouteImport } from './routes/verify/result'
 import { Route as ProfileSearchResultRouteImport } from './routes/profile-search/result'
 import { Route as ImageSearchResultRouteImport } from './routes/image-search/result'
 import { Route as AnalyzeIdRouteImport } from './routes/analyze/$id'
 
-const VerifyRoute = VerifyRouteImport.update({
-  id: '/verify',
-  path: '/verify',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const UrlRoute = UrlRouteImport.update({
   id: '/url',
   path: '/url',
@@ -52,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerifyIndexRoute = VerifyIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => VerifyRoute,
+} as any)
 const ProfileSearchIndexRoute = ProfileSearchIndexRouteImport.update({
   id: '/profile-search/',
   path: '/profile-search/',
@@ -66,6 +67,11 @@ const AnalyzeIndexRoute = AnalyzeIndexRouteImport.update({
   id: '/analyze/',
   path: '/analyze/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyResultRoute = VerifyResultRouteImport.update({
+  id: '/result',
+  path: '/result',
+  getParentRoute: () => VerifyRoute,
 } as any)
 const ProfileSearchResultRoute = ProfileSearchResultRouteImport.update({
   id: '/profile-search/result',
@@ -89,13 +95,14 @@ export interface FileRoutesByFullPath {
   '/fraud': typeof FraudRoute
   '/training': typeof TrainingRoute
   '/url': typeof UrlRoute
-  '/verify': typeof VerifyRoute
   '/analyze/$id': typeof AnalyzeIdRoute
   '/image-search/result': typeof ImageSearchResultRoute
   '/profile-search/result': typeof ProfileSearchResultRoute
+  '/verify/result': typeof VerifyResultRoute
   '/analyze/': typeof AnalyzeIndexRoute
   '/image-search/': typeof ImageSearchIndexRoute
   '/profile-search/': typeof ProfileSearchIndexRoute
+  '/verify/': typeof VerifyIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -103,13 +110,14 @@ export interface FileRoutesByTo {
   '/fraud': typeof FraudRoute
   '/training': typeof TrainingRoute
   '/url': typeof UrlRoute
-  '/verify': typeof VerifyRoute
   '/analyze/$id': typeof AnalyzeIdRoute
   '/image-search/result': typeof ImageSearchResultRoute
   '/profile-search/result': typeof ProfileSearchResultRoute
+  '/verify/result': typeof VerifyResultRoute
   '/analyze': typeof AnalyzeIndexRoute
   '/image-search': typeof ImageSearchIndexRoute
   '/profile-search': typeof ProfileSearchIndexRoute
+  '/verify': typeof VerifyIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -118,13 +126,14 @@ export interface FileRoutesById {
   '/fraud': typeof FraudRoute
   '/training': typeof TrainingRoute
   '/url': typeof UrlRoute
-  '/verify': typeof VerifyRoute
   '/analyze/$id': typeof AnalyzeIdRoute
   '/image-search/result': typeof ImageSearchResultRoute
   '/profile-search/result': typeof ProfileSearchResultRoute
+  '/verify/result': typeof VerifyResultRoute
   '/analyze/': typeof AnalyzeIndexRoute
   '/image-search/': typeof ImageSearchIndexRoute
   '/profile-search/': typeof ProfileSearchIndexRoute
+  '/verify/': typeof VerifyIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -134,13 +143,14 @@ export interface FileRouteTypes {
     | '/fraud'
     | '/training'
     | '/url'
-    | '/verify'
     | '/analyze/$id'
     | '/image-search/result'
     | '/profile-search/result'
+    | '/verify/result'
     | '/analyze/'
     | '/image-search/'
     | '/profile-search/'
+    | '/verify/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -148,13 +158,14 @@ export interface FileRouteTypes {
     | '/fraud'
     | '/training'
     | '/url'
-    | '/verify'
     | '/analyze/$id'
     | '/image-search/result'
     | '/profile-search/result'
+    | '/verify/result'
     | '/analyze'
     | '/image-search'
     | '/profile-search'
+    | '/verify'
   id:
     | '__root__'
     | '/'
@@ -162,13 +173,14 @@ export interface FileRouteTypes {
     | '/fraud'
     | '/training'
     | '/url'
-    | '/verify'
     | '/analyze/$id'
     | '/image-search/result'
     | '/profile-search/result'
+    | '/verify/result'
     | '/analyze/'
     | '/image-search/'
     | '/profile-search/'
+    | '/verify/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -177,7 +189,6 @@ export interface RootRouteChildren {
   FraudRoute: typeof FraudRoute
   TrainingRoute: typeof TrainingRoute
   UrlRoute: typeof UrlRoute
-  VerifyRoute: typeof VerifyRoute
   AnalyzeIdRoute: typeof AnalyzeIdRoute
   ImageSearchResultRoute: typeof ImageSearchResultRoute
   ProfileSearchResultRoute: typeof ProfileSearchResultRoute
@@ -188,13 +199,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/verify': {
-      id: '/verify'
-      path: '/verify'
-      fullPath: '/verify'
-      preLoaderRoute: typeof VerifyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/url': {
       id: '/url'
       path: '/url'
@@ -230,6 +234,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/verify/': {
+      id: '/verify/'
+      path: '/'
+      fullPath: '/verify/'
+      preLoaderRoute: typeof VerifyIndexRouteImport
+      parentRoute: typeof VerifyRoute
+    }
     '/profile-search/': {
       id: '/profile-search/'
       path: '/profile-search'
@@ -250,6 +261,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/analyze/'
       preLoaderRoute: typeof AnalyzeIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/verify/result': {
+      id: '/verify/result'
+      path: '/result'
+      fullPath: '/verify/result'
+      preLoaderRoute: typeof VerifyResultRouteImport
+      parentRoute: typeof VerifyRoute
     }
     '/profile-search/result': {
       id: '/profile-search/result'
@@ -281,7 +299,6 @@ const rootRouteChildren: RootRouteChildren = {
   FraudRoute: FraudRoute,
   TrainingRoute: TrainingRoute,
   UrlRoute: UrlRoute,
-  VerifyRoute: VerifyRoute,
   AnalyzeIdRoute: AnalyzeIdRoute,
   ImageSearchResultRoute: ImageSearchResultRoute,
   ProfileSearchResultRoute: ProfileSearchResultRoute,

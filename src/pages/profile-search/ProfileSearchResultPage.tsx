@@ -331,15 +331,21 @@ export default function ProfileSearchResultPage() {
               {result.webImageResults.slice(0, 6).map((img, i) => (
                 <ImageCard key={i} href={img.sourceUrl} target="_blank" rel="noopener noreferrer">
                   {img.thumbnailUrl ? (
-                    <ImageThumbnail src={img.thumbnailUrl} alt={img.title} />
-                  ) : (
-                    <ImagePlaceholder>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7684" strokeWidth="2">
-                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                      </svg>
-                    </ImagePlaceholder>
-                  )}
+                    <ImageThumbnail
+                      src={img.thumbnailUrl}
+                      alt={img.title}
+                      onError={e => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        (e.currentTarget.nextElementSibling as HTMLElement)?.style.setProperty('display', 'flex');
+                      }}
+                    />
+                  ) : null}
+                  <ImagePlaceholder style={img.thumbnailUrl ? { display: 'none' } : undefined}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7684" strokeWidth="2">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    </svg>
+                  </ImagePlaceholder>
                 </ImageCard>
               ))}
             </ImageGrid>
@@ -351,7 +357,11 @@ export default function ProfileSearchResultPage() {
             <SectionTitle>발견된 프로필</SectionTitle>
             {allProfiles.slice(0, 5).map((profile, i) => (
               <ProfileCard key={i} href={profile.profileUrl} target="_blank" rel="noopener noreferrer">
-                <ProfileImage src={profile.imageUrl} alt={profile.name} />
+                <ProfileImage
+                  src={profile.imageUrl}
+                  alt={profile.name}
+                  onError={e => { (e.currentTarget as HTMLImageElement).src = ''; }}
+                />
                 <ProfileInfo>
                   <ProfileName>{profile.name}</ProfileName>
                   <ProfileUsername>@{profile.username}</ProfileUsername>

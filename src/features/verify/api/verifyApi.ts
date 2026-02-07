@@ -8,10 +8,19 @@ interface VerifyResponse {
   error?: string;
 }
 
+type VerifyType = 'URL' | 'PHONE' | 'ACCOUNT';
+
+const typeEndpoints: Record<VerifyType, string> = {
+  URL: '/api/verify/url',
+  PHONE: '/api/verify/phone',
+  ACCOUNT: '/api/verify/account',
+};
+
 export function useVerify() {
   return useMutation({
-    mutationFn: async (value: string): Promise<VerifyResult> => {
-      const response = await apiClient.post<VerifyResponse>('/api/verify/check', { value });
+    mutationFn: async ({ type, value }: { type: VerifyType; value: string }): Promise<VerifyResult> => {
+      const endpoint = typeEndpoints[type];
+      const response = await apiClient.post<VerifyResponse>(endpoint, { value });
 
       if (response.success && response.data) {
         return response.data;

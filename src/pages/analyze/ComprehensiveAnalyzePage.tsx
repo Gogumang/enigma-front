@@ -1,16 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import styled from '@emotion/styled';
 import { keyframes } from '@emotion/react';
 import { Link } from '@tanstack/react-router';
 import Lottie from 'lottie-react';
-import { useDeepfakeAnalysis, type DeepfakeResult } from '@/features/detect-deepfake';
-import { useProfileSearch, type SearchResult } from '@/features/search-profile';
-import { useChatAnalysis, useScreenshotAnalysis } from '@/features/analyze-chat';
-import { useFraudCheck } from '@/features/check-fraud';
-import { useUrlCheck } from '@/features/check-url';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useComprehensiveAnalysis, type ComprehensiveResult } from '@/features/analyze-comprehensive';
+import { useFaceDetect, type DetectedFace } from '@/features/search-profile';
 import { useScamReport } from '@/features/report-scam';
 import { ImageDropzone } from '@/shared/ui/ImageDropzone/ImageDropzone';
-import type { AnalysisData, FraudCheckResult, UrlCheckResult } from '@/entities/analysis';
 
 import safeAnimation from '@/shared/assets/lottie/safe.json';
 import warningAnimation from '@/shared/assets/lottie/warning.json';
@@ -18,14 +15,6 @@ import dangerAnimation from '@/shared/assets/lottie/danger.json';
 import loadingAnimation from '@/shared/assets/lottie/loading.json';
 
 // ==================== Types ====================
-
-interface StepResults {
-  deepfake?: DeepfakeResult;
-  profile?: SearchResult;
-  chat?: AnalysisData;
-  fraud?: { phone?: FraudCheckResult; account?: FraudCheckResult };
-  url?: UrlCheckResult;
-}
 
 interface IdentifiedInfo {
   type: string;
@@ -79,37 +68,7 @@ const Content = styled.div`
   padding: 20px 16px 40px;
   max-width: 600px;
   margin: 0 auto;
-`;
-
-// Step Indicator
-const StepIndicator = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  padding: 20px 0;
-`;
-
-const StepDot = styled.div<{ $active: boolean; $completed: boolean }>`
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.3s;
-  background: ${p => p.$completed ? '#10b981' : p.$active ? 'var(--accent-primary)' : 'var(--bg-secondary)'};
-  color: ${p => (p.$completed || p.$active) ? '#fff' : 'var(--text-tertiary)'};
-  border: 2px solid ${p => p.$completed ? '#10b981' : p.$active ? 'var(--accent-primary)' : 'var(--border-color)'};
-`;
-
-const StepLine = styled.div<{ $completed: boolean }>`
-  width: 40px;
-  height: 2px;
-  background: ${p => p.$completed ? '#10b981' : 'var(--border-color)'};
-  transition: background 0.3s;
+  overflow: hidden;
 `;
 
 // Section
@@ -277,6 +236,41 @@ const LoadingText = styled.div`
 const LoadingSubtext = styled.div`
   font-size: 14px;
   color: rgba(255,255,255,0.7);
+`;
+
+// URL Input
+const UrlInputWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+  overflow: hidden;
+  transition: all 0.2s;
+  &:focus-within {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  }
+`;
+
+const UrlPrefix = styled.span`
+  padding: 14px 0 14px 14px;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+`;
+
+const UrlTextInput = styled.input`
+  flex: 1;
+  padding: 14px 14px 14px 8px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  color: var(--text-primary);
+  &:focus { outline: none; }
+  &::placeholder { color: var(--text-tertiary); font-family: inherit; }
 `;
 
 // Result styles (Step 4)
@@ -467,6 +461,175 @@ const StatusBadge = styled.span<{ $status: 'safe' | 'danger' | 'warning' | 'pend
   }};
 `;
 
+// ==================== Face Select Modal ====================
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+`;
+
+const ModalContent = styled.div`
+  background: var(--bg-card);
+  border-radius: 16px;
+  max-width: 420px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+`;
+
+const ModalHeader = styled.div`
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid var(--border-color);
+`;
+
+const ModalTitle = styled.h3`
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+`;
+
+const ModalDesc = styled.p`
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin: 0;
+`;
+
+const FacePreviewWrapper = styled.div`
+  position: relative;
+  margin: 16px 20px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+`;
+
+const FacePreviewImage = styled.img`
+  width: 100%;
+  display: block;
+`;
+
+const FaceBoundingBox = styled.div<{ $selected: boolean }>`
+  position: absolute;
+  border: 2px solid ${p => (p.$selected ? '#6366f1' : 'rgba(255, 255, 255, 0.7)')};
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: ${p => (p.$selected ? '0 0 0 2px rgba(99,102,241,0.4)' : 'none')};
+
+  &:hover {
+    border-color: #6366f1;
+  }
+`;
+
+const FaceBboxLabel = styled.div<{ $selected: boolean }>`
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: ${p => (p.$selected ? '#6366f1' : 'rgba(0,0,0,0.6)')};
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+`;
+
+const FaceGridLabel = styled.div`
+  padding: 12px 20px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+`;
+
+const FaceGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 10px;
+  padding: 10px 20px 16px;
+`;
+
+const FaceCard = styled.button<{ $selected: boolean }>`
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 3px solid ${p => (p.$selected ? '#6366f1' : 'var(--border-color)')};
+  background: var(--bg-secondary);
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.2s, transform 0.15s;
+
+  &:hover {
+    transform: scale(1.04);
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const FaceCheckMark = styled.div`
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #6366f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ModalFooter = styled.div`
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px 20px;
+  border-top: 1px solid var(--border-color);
+`;
+
+const ModalCancelBtn = styled.button`
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+`;
+
+const ModalConfirmBtn = styled.button<{ $disabled?: boolean }>`
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: ${p => (p.$disabled ? 'var(--bg-secondary)' : '#6366f1')};
+  color: ${p => (p.$disabled ? 'var(--text-tertiary)' : '#fff')};
+  font-size: 14px;
+  font-weight: 600;
+  cursor: ${p => (p.$disabled ? 'default' : 'pointer')};
+`;
+
+// ==================== Slide Animation ====================
+
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
+};
+
 // ==================== Helper Functions ====================
 
 const lottieAnimations = {
@@ -502,264 +665,218 @@ function calculateOverallScore(entries: ScoreEntry[]): number {
   return Math.round(weightedSum / totalWeight);
 }
 
+// ==================== Map API result → StepResults-like shape ====================
+
+function mapApiResultToStepData(result: ComprehensiveResult) {
+  const deepfakeData = result.deepfake as Record<string, unknown> | null;
+  const profileData = result.profile as Record<string, unknown> | null;
+  const chatData = result.chat as Record<string, unknown> | null;
+  const fraudData = result.fraud as { phone?: Record<string, unknown>; account?: Record<string, unknown> } | null;
+  const urlData = result.url as Record<string, unknown> | null;
+
+  return { deepfakeData, profileData, chatData, fraudData, urlData };
+}
+
 // ==================== Component ====================
 
 export default function ComprehensiveAnalyzePage() {
   const [currentStep, setCurrentStep] = useState(1);
-  const [stepResults, setStepResults] = useState<StepResults>({});
+  const [direction, setDirection] = useState(1);
 
-  // Step 1 state
+  // Step 1 state — data only
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isStep1Loading, setIsStep1Loading] = useState(false);
-  const [step1Error, setStep1Error] = useState('');
-  const [step1LoadingText, setStep1LoadingText] = useState('');
+  const [detectedFaces, setDetectedFaces] = useState<DetectedFace[]>([]);
+  const [selectedFaceIndex, setSelectedFaceIndex] = useState<number | null>(null);
+  const [showFaceModal, setShowFaceModal] = useState(false);
+  const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const previewImgRef = useRef<HTMLImageElement>(null);
 
-  // Step 2 state
+  // Step 2 state — data only
   const [chatText, setChatText] = useState('');
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-  const [isStep2Loading, setIsStep2Loading] = useState(false);
-  const [step2Error, setStep2Error] = useState('');
-  const [step2LoadingText, setStep2LoadingText] = useState('');
 
-  // Step 3 state
+  // Step 3 state — data only
   const [phoneNumber, setPhoneNumber] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [urlInput, setUrlInput] = useState('');
-  const [isStep3Loading, setIsStep3Loading] = useState(false);
-  const [step3Error, setStep3Error] = useState('');
-  const [step3LoadingText, setStep3LoadingText] = useState('');
 
   // Step 4 state
   const [reportSuccess, setReportSuccess] = useState(false);
+  const [apiResult, setApiResult] = useState<ComprehensiveResult | null>(null);
 
   // Hooks
-  const deepfakeAnalysis = useDeepfakeAnalysis();
-  const profileSearch = useProfileSearch();
-  const chatAnalysis = useChatAnalysis();
-  const screenshotAnalysis = useScreenshotAnalysis();
-  const fraudCheck = useFraudCheck();
-  const urlCheck = useUrlCheck();
+  const comprehensiveAnalysis = useComprehensiveAnalysis();
+  const faceDetect = useFaceDetect();
   const scamReport = useScamReport();
 
-  // ==================== Step 1: Image/Video Analysis ====================
+  const isAnalyzing = comprehensiveAnalysis.isPending;
+  const previewUrl = useMemo(() => (selectedFile ? URL.createObjectURL(selectedFile) : null), [selectedFile]);
+
+  const handlePreviewLoad = useCallback(() => {
+    const img = previewImgRef.current;
+    if (img) {
+      setImgNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    }
+  }, []);
+
+  // Navigate forward
+  const goNext = useCallback(() => {
+    setDirection(1);
+    setCurrentStep(prev => prev + 1);
+  }, []);
+
+  // Navigate backward
+  const goBack = useCallback(() => {
+    setDirection(-1);
+    setCurrentStep(prev => prev - 1);
+  }, []);
+
+  // ==================== Step 1: Image/Video Data Collection ====================
 
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
-    setStep1Error('');
-  }, []);
+    setDetectedFaces([]);
+    setSelectedFaceIndex(null);
 
-  const handleStep1Analyze = async () => {
-    if (!selectedFile) return;
-    setIsStep1Loading(true);
-    setStep1Error('');
-    const results: StepResults = { ...stepResults };
-
-    try {
-      // Deepfake analysis
-      const isVideo = selectedFile.type.startsWith('video/');
-      setStep1LoadingText('딥페이크 분석 중...');
-      try {
-        const deepfakeResult = await deepfakeAnalysis.mutateAsync({ file: selectedFile, isVideo });
-        results.deepfake = deepfakeResult;
-      } catch {
-        // continue even if deepfake fails
-      }
-
-      // Profile search (images only)
-      if (!isVideo) {
-        setStep1LoadingText('프로필 검색 중...');
-        try {
-          const profileResult = await profileSearch.mutateAsync({ image: selectedFile });
-          results.profile = profileResult;
-        } catch {
-          // continue even if profile search fails
-        }
-      }
-
-      setStepResults(results);
-      setCurrentStep(2);
-    } catch (err) {
-      setStep1Error(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다');
-    } finally {
-      setIsStep1Loading(false);
-      setStep1LoadingText('');
+    // 이미지인 경우 얼굴 감지 실행
+    if (file.type.startsWith('image/')) {
+      faceDetect.mutate(file, {
+        onSuccess: (faces) => {
+          if (faces.length > 0) {
+            setDetectedFaces(faces);
+            setShowFaceModal(true);
+          }
+        },
+      });
     }
-  };
+  }, [faceDetect]);
 
-  // ==================== Step 2: Chat Analysis ====================
+  // ==================== Step 2: Chat Data Collection ====================
 
   const handleScreenshotSelect = useCallback((file: File) => {
     setScreenshotFile(file);
-    setStep2Error('');
   }, []);
 
-  const handleStep2Analyze = async () => {
-    if (!chatText.trim() && !screenshotFile) return;
-    setIsStep2Loading(true);
-    setStep2Error('');
-    const results: StepResults = { ...stepResults };
+  // ==================== Step 4: Fire comprehensive API ====================
 
-    try {
-      if (screenshotFile) {
-        setStep2LoadingText('스크린샷 분석 중...');
-        const screenshotResult = await screenshotAnalysis.mutateAsync(screenshotFile);
-        if (screenshotResult.analysis) {
-          results.chat = screenshotResult.analysis;
-        }
-      } else if (chatText.trim()) {
-        setStep2LoadingText('대화 내용 분석 중...');
-        const messages = chatText.split('\n').filter(l => l.trim());
-        const chatResult = await chatAnalysis.mutateAsync(messages);
-        if (chatResult.analysis) {
-          results.chat = chatResult.analysis;
-        }
-      }
+  useEffect(() => {
+    if (currentStep === 4 && !apiResult && !isAnalyzing && !comprehensiveAnalysis.isError) {
+      // Collect all data and fire API
+      const chatMessages = chatText.trim()
+        ? chatText.split('\n').filter(l => l.trim())
+        : undefined;
 
-      setStepResults(results);
-      setCurrentStep(3);
-    } catch (err) {
-      setStep2Error(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다');
-    } finally {
-      setIsStep2Loading(false);
-      setStep2LoadingText('');
+      comprehensiveAnalysis.mutate(
+        {
+          image: selectedFile ?? undefined,
+          chatMessages,
+          chatScreenshot: screenshotFile ?? undefined,
+          phone: phoneNumber.trim() || undefined,
+          account: accountNumber.trim() || undefined,
+          url: urlInput.trim() || undefined,
+        },
+        {
+          onSuccess: (data) => {
+            setApiResult(data);
+          },
+        },
+      );
     }
-  };
+  }, [currentStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ==================== Step 3: Contact Info Check ====================
-
-  const handleStep3Analyze = async () => {
-    if (!phoneNumber.trim() && !accountNumber.trim() && !urlInput.trim()) return;
-    setIsStep3Loading(true);
-    setStep3Error('');
-    const results: StepResults = { ...stepResults };
-
-    try {
-      const fraudResults: { phone?: FraudCheckResult; account?: FraudCheckResult } = {};
-
-      if (phoneNumber.trim()) {
-        setStep3LoadingText('전화번호 조회 중...');
-        try {
-          fraudResults.phone = await fraudCheck.mutateAsync({ type: 'PHONE', value: phoneNumber });
-        } catch {
-          // continue
-        }
-      }
-
-      if (accountNumber.trim()) {
-        setStep3LoadingText('계좌번호 조회 중...');
-        try {
-          fraudResults.account = await fraudCheck.mutateAsync({ type: 'ACCOUNT', value: accountNumber });
-        } catch {
-          // continue
-        }
-      }
-
-      if (Object.keys(fraudResults).length > 0) {
-        results.fraud = fraudResults;
-      }
-
-      if (urlInput.trim()) {
-        setStep3LoadingText('URL 검사 중...');
-        try {
-          const urlResult = await urlCheck.mutateAsync(urlInput.trim());
-          results.url = urlResult;
-        } catch {
-          // continue
-        }
-      }
-
-      setStepResults(results);
-      setCurrentStep(4);
-    } catch (err) {
-      setStep3Error(err instanceof Error ? err.message : '조회 중 오류가 발생했습니다');
-    } finally {
-      setIsStep3Loading(false);
-      setStep3LoadingText('');
-    }
-  };
-
-  // ==================== Step 4: Result Calculation ====================
+  // ==================== Result Calculation ====================
 
   const computeScores = () => {
     const entries: ScoreEntry[] = [];
+    if (!apiResult) return { entries, overallScore: 0 };
+
+    const { deepfakeData, profileData, chatData, fraudData, urlData } = mapApiResultToStepData(apiResult);
 
     // Deepfake score
-    if (stepResults.deepfake) {
-      const confidence = stepResults.deepfake.data.confidence * 100;
+    if (deepfakeData) {
+      const confidence = (deepfakeData.confidence as number) * 100;
+      const isDeepfake = deepfakeData.isDeepfake as boolean;
       entries.push({
         label: '딥페이크',
-        score: stepResults.deepfake.data.isDeepfake ? confidence : Math.max(0, 100 - confidence),
+        score: isDeepfake ? confidence : Math.max(0, 100 - confidence),
         weight: 0.25,
       });
     }
 
     // Profile score
-    if (stepResults.profile) {
-      const profileScore = stepResults.profile.totalFound > 10
-        ? Math.min(80, stepResults.profile.totalFound * 3)
-        : stepResults.profile.totalFound > 0 ? 20 : 0;
+    if (profileData) {
+      const totalFound = (profileData.totalFound as number) ?? 0;
+      const profileScore = totalFound > 10
+        ? Math.min(80, totalFound * 3)
+        : totalFound > 0 ? 20 : 0;
       entries.push({ label: '프로필', score: profileScore, weight: 0.20 });
     }
 
     // Chat score
-    if (stepResults.chat) {
-      entries.push({ label: '대화분석', score: stepResults.chat.riskScore, weight: 0.30 });
+    if (chatData) {
+      entries.push({ label: '대화분석', score: (chatData.riskScore as number) ?? 0, weight: 0.30 });
     }
 
     // Fraud score
-    if (stepResults.fraud) {
-      const phoneDanger = stepResults.fraud.phone?.status === 'danger';
-      const accountDanger = stepResults.fraud.account?.status === 'danger';
+    if (fraudData) {
+      const phoneDanger = (fraudData.phone?.status as string) === 'danger';
+      const accountDanger = (fraudData.account?.status as string) === 'danger';
       const fraudScore = (phoneDanger || accountDanger) ? 100 : 0;
       entries.push({ label: '사기이력', score: fraudScore, weight: 0.15 });
     }
 
     // URL score
-    if (stepResults.url) {
-      const urlScore = stepResults.url.status === 'danger' ? 100 :
-        stepResults.url.status === 'warning' ? 50 : 0;
+    if (urlData) {
+      const status = urlData.status as string;
+      const urlScore = status === 'danger' ? 100 : status === 'warning' ? 50 : 0;
       entries.push({ label: 'URL', score: urlScore, weight: 0.10 });
     }
 
     const overallScore = calculateOverallScore(entries);
-
     return { entries, overallScore };
   };
 
   const collectReasons = (): string[] => {
     const reasons: string[] = [];
+    if (!apiResult) return reasons;
 
-    if (stepResults.deepfake?.data.isDeepfake) {
-      reasons.push(`딥페이크 의심 (확신도 ${Math.round(stepResults.deepfake.data.confidence * 100)}%)`);
-      if (stepResults.deepfake.data.analysisReasons) {
-        reasons.push(...stepResults.deepfake.data.analysisReasons.slice(0, 2));
+    const { deepfakeData, profileData, chatData, fraudData, urlData } = mapApiResultToStepData(apiResult);
+
+    if (deepfakeData?.isDeepfake) {
+      reasons.push(`딥페이크 의심 (확신도 ${Math.round((deepfakeData.confidence as number) * 100)}%)`);
+      const analysisReasons = deepfakeData.analysisReasons as string[] | undefined;
+      if (analysisReasons) {
+        reasons.push(...analysisReasons.slice(0, 2));
       }
     }
 
-    if (stepResults.profile && stepResults.profile.totalFound > 10) {
+    if (profileData && (profileData.totalFound as number) > 10) {
       reasons.push('해당 이미지가 여러 플랫폼에서 사용되고 있습니다');
     }
 
-    if (stepResults.chat) {
-      if (stepResults.chat.riskScore >= 60) {
+    if (chatData) {
+      if ((chatData.riskScore as number) >= 60) {
         reasons.push('대화 내용에서 사기 패턴이 강하게 감지되었습니다');
       }
-      if (stepResults.chat.reasons?.length > 0) {
-        reasons.push(...stepResults.chat.reasons.slice(0, 3));
+      const warningSigns = chatData.warningSigns as string[] | undefined;
+      if (warningSigns && warningSigns.length > 0) {
+        reasons.push(...warningSigns.slice(0, 3));
       }
     }
 
-    if (stepResults.fraud?.phone?.status === 'danger') {
-      reasons.push(`전화번호 ${stepResults.fraud.phone.displayValue}가 사기 이력에 등록되어 있습니다`);
+    if ((fraudData?.phone?.status as string) === 'danger') {
+      const displayValue = (fraudData?.phone?.displayValue as string) || phoneNumber;
+      reasons.push(`전화번호 ${displayValue}가 사기 이력에 등록되어 있습니다`);
     }
-    if (stepResults.fraud?.account?.status === 'danger') {
-      reasons.push(`계좌번호가 사기 이력에 등록되어 있습니다`);
+    if ((fraudData?.account?.status as string) === 'danger') {
+      reasons.push('계좌번호가 사기 이력에 등록되어 있습니다');
     }
 
-    if (stepResults.url?.status === 'danger') {
-      reasons.push(`URL이 위험한 사이트로 판별되었습니다`);
-      if (stepResults.url.suspiciousPatterns?.length > 0) {
-        reasons.push(...stepResults.url.suspiciousPatterns.slice(0, 2));
+    if ((urlData?.status as string) === 'danger') {
+      reasons.push('URL이 위험한 사이트로 판별되었습니다');
+      const patterns = urlData?.suspiciousPatterns as string[] | undefined;
+      if (patterns && patterns.length > 0) {
+        reasons.push(...patterns.slice(0, 2));
       }
     }
 
@@ -784,12 +901,14 @@ export default function ComprehensiveAnalyzePage() {
     }
 
     // SNS profiles from profile search
-    if (stepResults.profile) {
-      const platforms = stepResults.profile.results;
-      for (const [platform, profiles] of Object.entries(platforms)) {
-        for (const p of profiles) {
-          if (p.username) {
-            infos.push({ type: 'SNS', value: `${platform}:${p.username}`, label: `@${p.username} (${platform})` });
+    if (apiResult?.profile) {
+      const results = (apiResult.profile as Record<string, unknown>).results as Record<string, Array<{ username?: string }>> | undefined;
+      if (results) {
+        for (const [platform, profiles] of Object.entries(results)) {
+          for (const p of profiles) {
+            if (p.username) {
+              infos.push({ type: 'SNS', value: `${platform}:${p.username}`, label: `@${p.username} (${platform})` });
+            }
           }
         }
       }
@@ -826,8 +945,19 @@ export default function ComprehensiveAnalyzePage() {
     }
   };
 
-  const isLoading = isStep1Loading || isStep2Loading || isStep3Loading;
-  const loadingText = step1LoadingText || step2LoadingText || step3LoadingText;
+  const resetAll = () => {
+    setDirection(-1);
+    setCurrentStep(1);
+    setSelectedFile(null);
+    setChatText('');
+    setScreenshotFile(null);
+    setPhoneNumber('');
+    setAccountNumber('');
+    setUrlInput('');
+    setReportSuccess(false);
+    setApiResult(null);
+    comprehensiveAnalysis.reset();
+  };
 
   // ==================== Render ====================
 
@@ -845,352 +975,540 @@ export default function ComprehensiveAnalyzePage() {
       </Header>
 
       <Content>
-        {/* Step Indicator */}
-        <StepIndicator>
-          {[1, 2, 3, 4].map((step, i) => (
-            <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
-              <StepDot $active={currentStep === step} $completed={currentStep > step}>
-                {currentStep > step ? (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : step}
-              </StepDot>
-              {i < 3 && <StepLine $completed={currentStep > step} />}
-            </div>
-          ))}
-        </StepIndicator>
-
-        {/* Step 1: Image/Video Analysis */}
-        {currentStep === 1 && (
-          <Section>
-            <SectionTitle>이미지/영상 분석</SectionTitle>
-            <SectionDesc>딥페이크 여부를 확인하고 프로필을 검색합니다</SectionDesc>
-
-            <ImageDropzone
-              onFileSelect={handleFileSelect}
-              accept="image+video"
-              title="이미지 또는 영상을 업로드하세요"
-              hint="드래그하거나 클릭하여 선택"
-            />
-
-            {step1Error && <ErrorText>{step1Error}</ErrorText>}
-
-            <ButtonRow>
-              <SkipButton onClick={() => setCurrentStep(2)}>건너뛰기</SkipButton>
-              <PrimaryButton
-                $disabled={!selectedFile || isStep1Loading}
-                disabled={!selectedFile || isStep1Loading}
-                onClick={handleStep1Analyze}
-              >
-                분석하기
-              </PrimaryButton>
-            </ButtonRow>
-          </Section>
-        )}
-
-        {/* Step 2: Chat Analysis */}
-        {currentStep === 2 && (
-          <Section>
-            <SectionTitle>대화 내용 분석</SectionTitle>
-            <SectionDesc>대화 텍스트를 입력하거나 스크린샷을 업로드하세요</SectionDesc>
-
-            <InputGroup>
-              <InputLabel>대화 내용 붙여넣기</InputLabel>
-              <TextArea
-                value={chatText}
-                onChange={e => { setChatText(e.target.value); setStep2Error(''); }}
-                placeholder={'대화 내용을 붙여넣어 주세요\n\n예:\n나: 안녕하세요\n상대: 안녕, 요즘 투자에 관심 있어?\n나: 무슨 투자요?'}
-              />
-            </InputGroup>
-
-            <InputGroup>
-              <InputLabel>또는 대화 스크린샷 업로드</InputLabel>
-              <ImageDropzone
-                onFileSelect={handleScreenshotSelect}
-                accept="image"
-                title="대화 스크린샷"
-                hint="카카오톡, 라인 등의 대화 캡쳐"
-              />
-            </InputGroup>
-
-            {step2Error && <ErrorText>{step2Error}</ErrorText>}
-
-            <ButtonRow>
-              <SkipButton onClick={() => setCurrentStep(3)}>건너뛰기</SkipButton>
-              <PrimaryButton
-                $disabled={(!chatText.trim() && !screenshotFile) || isStep2Loading}
-                disabled={(!chatText.trim() && !screenshotFile) || isStep2Loading}
-                onClick={handleStep2Analyze}
-              >
-                분석하기
-              </PrimaryButton>
-            </ButtonRow>
-          </Section>
-        )}
-
-        {/* Step 3: Contact Info */}
-        {currentStep === 3 && (
-          <Section>
-            <SectionTitle>연락처 정보 확인</SectionTitle>
-            <SectionDesc>전화번호, 계좌번호, URL을 확인합니다</SectionDesc>
-
-            <InputGroup>
-              <InputLabel>전화번호</InputLabel>
-              <TextInput
-                value={phoneNumber}
-                onChange={e => { setPhoneNumber(e.target.value); setStep3Error(''); }}
-                placeholder="01012345678"
-                type="tel"
-              />
-            </InputGroup>
-
-            <InputGroup>
-              <InputLabel>계좌번호</InputLabel>
-              <TextInput
-                value={accountNumber}
-                onChange={e => { setAccountNumber(e.target.value); setStep3Error(''); }}
-                placeholder="123-456-7890123"
-              />
-            </InputGroup>
-
-            <InputGroup>
-              <InputLabel>의심 URL</InputLabel>
-              <TextInput
-                value={urlInput}
-                onChange={e => { setUrlInput(e.target.value); setStep3Error(''); }}
-                placeholder="https://example.com"
-                type="url"
-              />
-            </InputGroup>
-
-            {step3Error && <ErrorText>{step3Error}</ErrorText>}
-
-            <ButtonRow>
-              <SkipButton onClick={() => setCurrentStep(4)}>건너뛰기</SkipButton>
-              <PrimaryButton
-                $disabled={(!phoneNumber.trim() && !accountNumber.trim() && !urlInput.trim()) || isStep3Loading}
-                disabled={(!phoneNumber.trim() && !accountNumber.trim() && !urlInput.trim()) || isStep3Loading}
-                onClick={handleStep3Analyze}
-              >
-                조회하기
-              </PrimaryButton>
-            </ButtonRow>
-          </Section>
-        )}
-
-        {/* Step 4: Results */}
-        {currentStep === 4 && (() => {
-          const { entries, overallScore } = computeScores();
-          const level = getLevel(overallScore);
-          const verdict = getVerdict(overallScore);
-          const reasons = collectReasons();
-          const identifiers = collectIdentifiers();
-
-          return (
-            <>
-              <ResultHeader $level={level}>
-                <LottieWrapper>
-                  <Lottie animationData={lottieAnimations[level]} loop />
-                </LottieWrapper>
-                <ResultVerdict $level={level}>{verdict}</ResultVerdict>
-                <ResultScore>종합 위험도 {overallScore}%</ResultScore>
-              </ResultHeader>
-
-              {/* Score Breakdown */}
+        <AnimatePresence mode="wait" custom={direction}>
+          {/* Step 1: Image/Video — data collection only */}
+          {currentStep === 1 && (
+            <motion.div
+              key="step1"
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
               <Section>
-                <DetailTitle>항목별 분석 점수</DetailTitle>
-                <ScoreBreakdown>
-                  {entries.map(entry => {
-                    const entryLevel = getLevel(entry.score);
-                    return (
-                      <ScoreItem key={entry.label}>
-                        <ScoreLabel>{entry.label}</ScoreLabel>
-                        <ScoreBar>
-                          <ScoreFill $score={entry.score} $level={entryLevel} />
-                        </ScoreBar>
-                        <ScoreValue $level={entryLevel}>{entry.score}%</ScoreValue>
-                      </ScoreItem>
-                    );
-                  })}
-                </ScoreBreakdown>
+                <SectionTitle>이미지/영상 분석</SectionTitle>
+                <SectionDesc>딥페이크 여부를 확인하고 프로필을 검색합니다</SectionDesc>
 
-                {entries.length === 0 && (
-                  <div style={{ fontSize: '14px', color: 'var(--text-tertiary)', textAlign: 'center', padding: '12px 0' }}>
-                    모든 단계를 건너뛰어 분석 결과가 없습니다
+                <ImageDropzone
+                  onFileSelect={handleFileSelect}
+                  accept="image+video"
+                  title="이미지 또는 영상을 업로드하세요"
+                  hint="드래그하거나 클릭하여 선택"
+                />
+
+                {faceDetect.isPending && (
+                  <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>
+                    얼굴을 감지하고 있습니다...
                   </div>
                 )}
-              </Section>
 
-              {/* Reasons */}
-              <Section>
-                <DetailTitle>분석 근거</DetailTitle>
-                <DetailSection>
-                  {reasons.map((reason, i) => (
-                    <DetailItem key={i}>{reason}</DetailItem>
-                  ))}
-                </DetailSection>
-              </Section>
-
-              {/* Step 1 details */}
-              {stepResults.deepfake && (
-                <Section>
-                  <DetailTitle>
-                    딥페이크 분석 결과
-                    <StatusBadge $status={stepResults.deepfake.data.isDeepfake ? 'danger' : 'safe'}>
-                      {stepResults.deepfake.data.isDeepfake ? '딥페이크 의심' : '정상'}
-                    </StatusBadge>
-                  </DetailTitle>
-                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                    {stepResults.deepfake.data.message}
+                {selectedFaceIndex !== null && detectedFaces[selectedFaceIndex] && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '12px 16px', background: 'var(--bg-secondary)', borderRadius: 12, marginTop: 8,
+                  }}>
+                    <img
+                      src={`data:image/jpeg;base64,${detectedFaces[selectedFaceIndex].imageBase64}`}
+                      alt="선택된 얼굴"
+                      style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>
+                        얼굴 #{selectedFaceIndex + 1} 선택됨
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>
+                        이 얼굴로 프로필을 검색합니다
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowFaceModal(true)}
+                      style={{
+                        padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border-color)',
+                        background: 'transparent', color: 'var(--text-secondary)', fontSize: 13,
+                        cursor: 'pointer', fontWeight: 500,
+                      }}
+                    >
+                      다시 선택
+                    </button>
                   </div>
-                </Section>
-              )}
-
-              {/* Step 2 details */}
-              {stepResults.chat && (
-                <Section>
-                  <DetailTitle>
-                    대화 분석 결과
-                    <StatusBadge $status={stepResults.chat.riskLevel}>{stepResults.chat.summary}</StatusBadge>
-                  </DetailTitle>
-                  {stepResults.chat.analysis && (
-                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '12px' }}>
-                      {stepResults.chat.analysis}
-                    </div>
-                  )}
-                  {stepResults.chat.detectedPatterns?.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {stepResults.chat.detectedPatterns.map((p, i) => (
-                        <span key={i} style={{
-                          padding: '4px 10px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          background: '#fef3c7',
-                          color: '#92400e',
-                        }}>
-                          {p.pattern}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </Section>
-              )}
-
-              {/* Step 3 details */}
-              {(stepResults.fraud || stepResults.url) && (
-                <Section>
-                  <DetailTitle>연락처/URL 조회 결과</DetailTitle>
-                  {stepResults.fraud?.phone && (
-                    <div style={{ marginBottom: '8px', fontSize: '14px' }}>
-                      전화번호 ({stepResults.fraud.phone.displayValue}):
-                      <StatusBadge $status={stepResults.fraud.phone.status}>
-                        {stepResults.fraud.phone.status === 'danger' ? '사기 이력 있음' : '이력 없음'}
-                      </StatusBadge>
-                    </div>
-                  )}
-                  {stepResults.fraud?.account && (
-                    <div style={{ marginBottom: '8px', fontSize: '14px' }}>
-                      계좌번호:
-                      <StatusBadge $status={stepResults.fraud.account.status}>
-                        {stepResults.fraud.account.status === 'danger' ? '사기 이력 있음' : '이력 없음'}
-                      </StatusBadge>
-                    </div>
-                  )}
-                  {stepResults.url && (
-                    <div style={{ marginBottom: '8px', fontSize: '14px' }}>
-                      URL ({stepResults.url.domain}):
-                      <StatusBadge $status={stepResults.url.status}>
-                        {stepResults.url.status === 'danger' ? '위험' : stepResults.url.status === 'warning' ? '주의' : '안전'}
-                      </StatusBadge>
-                    </div>
-                  )}
-                </Section>
-              )}
-
-              {/* Identified Info */}
-              {identifiers.length > 0 && (
-                <Section>
-                  <DetailTitle>특정된 정보</DetailTitle>
-                  <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                    {identifiers.map((info, i) => (
-                      <InfoTag key={i} $type={info.type}>
-                        {info.type === 'PHONE' && '📞'}
-                        {info.type === 'ACCOUNT' && '🏦'}
-                        {info.type === 'SNS' && '👤'}
-                        {info.type === 'URL' && '🔗'}
-                        {' '}{info.label}
-                      </InfoTag>
-                    ))}
-                  </div>
-                </Section>
-              )}
-
-              {/* Actions */}
-              <Section>
-                <DetailTitle>신고 및 조치</DetailTitle>
-
-                {reportSuccess && (
-                  <SuccessMessage>
-                    신고가 성공적으로 저장되었습니다
-                  </SuccessMessage>
-                )}
-
-                {scamReport.error && (
-                  <ErrorText style={{ marginBottom: '12px' }}>
-                    신고 저장 실패: {scamReport.error instanceof Error ? scamReport.error.message : '오류 발생'}
-                  </ErrorText>
                 )}
 
                 <ButtonRow>
-                  <OutlineButton
-                    href="https://ecrm.police.go.kr/minwon/main"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <SkipButton onClick={goNext}>건너뛰기</SkipButton>
+                  <PrimaryButton
+                    $disabled={!selectedFile}
+                    disabled={!selectedFile}
+                    onClick={goNext}
                   >
-                    경찰청 신고
-                  </OutlineButton>
-                  <DangerButton
-                    onClick={handleReport}
-                    disabled={reportSuccess || scamReport.isPending}
-                  >
-                    {scamReport.isPending ? '저장 중...' : reportSuccess ? '신고 완료' : '신고 저장'}
-                  </DangerButton>
+                    다음
+                  </PrimaryButton>
                 </ButtonRow>
-
-                <div style={{ marginTop: '16px' }}>
-                  <SkipButton style={{ width: '100%', textAlign: 'center' }} onClick={() => {
-                    setCurrentStep(1);
-                    setStepResults({});
-                    setSelectedFile(null);
-                    setChatText('');
-                    setScreenshotFile(null);
-                    setPhoneNumber('');
-                    setAccountNumber('');
-                    setUrlInput('');
-                    setReportSuccess(false);
-                    setStep1Error('');
-                    setStep2Error('');
-                    setStep3Error('');
-                  }}>
-                    처음부터 다시 분석
-                  </SkipButton>
-                </div>
               </Section>
-            </>
-          );
-        })()}
+            </motion.div>
+          )}
+
+          {/* Step 2: Chat — data collection only */}
+          {currentStep === 2 && (
+            <motion.div
+              key="step2"
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <Section>
+                <SectionTitle>대화 내용 분석</SectionTitle>
+                <SectionDesc>대화 텍스트를 입력하거나 스크린샷을 업로드하세요</SectionDesc>
+
+                <InputGroup>
+                  <InputLabel>대화 내용 붙여넣기</InputLabel>
+                  <TextArea
+                    value={chatText}
+                    onChange={e => setChatText(e.target.value)}
+                    placeholder={'대화 내용을 붙여넣어 주세요\n\n예:\n나: 안녕하세요\n상대: 안녕, 요즘 투자에 관심 있어?\n나: 무슨 투자요?'}
+                  />
+                </InputGroup>
+
+                <InputGroup>
+                  <InputLabel>또는 대화 스크린샷 업로드</InputLabel>
+                  <ImageDropzone
+                    onFileSelect={handleScreenshotSelect}
+                    accept="image"
+                    title="대화 스크린샷"
+                    hint="카카오톡, 라인 등의 대화 캡쳐"
+                  />
+                </InputGroup>
+
+                <ButtonRow>
+                  <SkipButton onClick={goNext}>건너뛰기</SkipButton>
+                  <PrimaryButton
+                    $disabled={!chatText.trim() && !screenshotFile}
+                    disabled={!chatText.trim() && !screenshotFile}
+                    onClick={goNext}
+                  >
+                    다음
+                  </PrimaryButton>
+                </ButtonRow>
+              </Section>
+            </motion.div>
+          )}
+
+          {/* Step 3: Contact Info — data collection only */}
+          {currentStep === 3 && (
+            <motion.div
+              key="step3"
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <Section>
+                <SectionTitle>연락처 정보 확인</SectionTitle>
+                <SectionDesc>전화번호, 계좌번호, URL을 확인합니다</SectionDesc>
+
+                <InputGroup>
+                  <InputLabel>전화번호</InputLabel>
+                  <TextInput
+                    value={phoneNumber}
+                    onChange={e => setPhoneNumber(e.target.value)}
+                    placeholder="01012345678"
+                    type="tel"
+                  />
+                </InputGroup>
+
+                <InputGroup>
+                  <InputLabel>계좌번호</InputLabel>
+                  <TextInput
+                    value={accountNumber}
+                    onChange={e => setAccountNumber(e.target.value)}
+                    placeholder="123-456-7890123"
+                  />
+                </InputGroup>
+
+                <InputGroup>
+                  <InputLabel>의심 URL</InputLabel>
+                  <UrlInputWrapper>
+                    <UrlPrefix>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                      </svg>
+                    </UrlPrefix>
+                    <UrlTextInput
+                      value={urlInput}
+                      onChange={e => setUrlInput(e.target.value)}
+                      placeholder="example.com"
+                    />
+                  </UrlInputWrapper>
+                </InputGroup>
+
+                <ButtonRow>
+                  <SkipButton onClick={goNext}>건너뛰기</SkipButton>
+                  <PrimaryButton
+                    $disabled={!phoneNumber.trim() && !accountNumber.trim() && !urlInput.trim()}
+                    disabled={!phoneNumber.trim() && !accountNumber.trim() && !urlInput.trim()}
+                    onClick={goNext}
+                  >
+                    분석 시작
+                  </PrimaryButton>
+                </ButtonRow>
+              </Section>
+            </motion.div>
+          )}
+
+          {/* Step 4: Results */}
+          {currentStep === 4 && apiResult && (() => {
+            const { deepfakeData, chatData, fraudData, urlData } = mapApiResultToStepData(apiResult);
+            const { entries, overallScore } = computeScores();
+            const level = getLevel(overallScore);
+            const verdict = getVerdict(overallScore);
+            const reasons = collectReasons();
+            const identifiers = collectIdentifiers();
+
+            return (
+              <motion.div
+                key="step4"
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+              >
+                <ResultHeader $level={level}>
+                  <LottieWrapper>
+                    <Lottie animationData={lottieAnimations[level]} loop />
+                  </LottieWrapper>
+                  <ResultVerdict $level={level}>{verdict}</ResultVerdict>
+                  <ResultScore>종합 위험도 {overallScore}%</ResultScore>
+                </ResultHeader>
+
+                {/* Score Breakdown */}
+                <Section>
+                  <DetailTitle>항목별 분석 점수</DetailTitle>
+                  <ScoreBreakdown>
+                    {entries.map(entry => {
+                      const entryLevel = getLevel(entry.score);
+                      return (
+                        <ScoreItem key={entry.label}>
+                          <ScoreLabel>{entry.label}</ScoreLabel>
+                          <ScoreBar>
+                            <ScoreFill $score={entry.score} $level={entryLevel} />
+                          </ScoreBar>
+                          <ScoreValue $level={entryLevel}>{entry.score}%</ScoreValue>
+                        </ScoreItem>
+                      );
+                    })}
+                  </ScoreBreakdown>
+
+                  {entries.length === 0 && (
+                    <div style={{ fontSize: '14px', color: 'var(--text-tertiary)', textAlign: 'center', padding: '12px 0' }}>
+                      모든 단계를 건너뛰어 분석 결과가 없습니다
+                    </div>
+                  )}
+                </Section>
+
+                {/* Reasons */}
+                <Section>
+                  <DetailTitle>분석 근거</DetailTitle>
+                  <DetailSection>
+                    {reasons.map((reason, i) => (
+                      <DetailItem key={i}>{reason}</DetailItem>
+                    ))}
+                  </DetailSection>
+                </Section>
+
+                {/* Deepfake details */}
+                {deepfakeData && (
+                  <Section>
+                    <DetailTitle>
+                      딥페이크 분석 결과
+                      <StatusBadge $status={(deepfakeData.isDeepfake as boolean) ? 'danger' : 'safe'}>
+                        {(deepfakeData.isDeepfake as boolean) ? '딥페이크 의심' : '정상'}
+                      </StatusBadge>
+                    </DetailTitle>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      {deepfakeData.message as string}
+                    </div>
+                  </Section>
+                )}
+
+                {/* Chat details */}
+                {chatData && (
+                  <Section>
+                    <DetailTitle>
+                      대화 분석 결과
+                      <StatusBadge $status={
+                        (chatData.riskScore as number) >= 60 ? 'danger' :
+                        (chatData.riskScore as number) >= 30 ? 'warning' : 'safe'
+                      }>
+                        위험도 {chatData.riskScore as number}점
+                      </StatusBadge>
+                    </DetailTitle>
+                    {typeof chatData.aiAnalysis === 'string' && chatData.aiAnalysis && (
+                      <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '12px' }}>
+                        {chatData.aiAnalysis}
+                      </div>
+                    )}
+                    {(chatData.detectedPatterns as Array<{ pattern: string }> | undefined)?.length ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {(chatData.detectedPatterns as Array<{ pattern: string }>).map((p, i) => (
+                          <span key={i} style={{
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            background: '#fef3c7',
+                            color: '#92400e',
+                          }}>
+                            {p.pattern}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </Section>
+                )}
+
+                {/* Fraud / URL details */}
+                {(fraudData || urlData) && (
+                  <Section>
+                    <DetailTitle>연락처/URL 조회 결과</DetailTitle>
+                    {fraudData?.phone && (
+                      <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                        전화번호 ({(fraudData.phone.displayValue as string) || phoneNumber}):
+                        <StatusBadge $status={(fraudData.phone.status as string) === 'danger' ? 'danger' : 'safe'}>
+                          {(fraudData.phone.status as string) === 'danger' ? '사기 이력 있음' : '이력 없음'}
+                        </StatusBadge>
+                      </div>
+                    )}
+                    {fraudData?.account && (
+                      <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                        계좌번호:
+                        <StatusBadge $status={(fraudData.account.status as string) === 'danger' ? 'danger' : 'safe'}>
+                          {(fraudData.account.status as string) === 'danger' ? '사기 이력 있음' : '이력 없음'}
+                        </StatusBadge>
+                      </div>
+                    )}
+                    {urlData && (
+                      <div style={{ marginBottom: '8px', fontSize: '14px' }}>
+                        URL ({urlData.domain as string}):
+                        <StatusBadge $status={
+                          (urlData.status as string) === 'danger' ? 'danger' :
+                          (urlData.status as string) === 'warning' ? 'warning' : 'safe'
+                        }>
+                          {(urlData.status as string) === 'danger' ? '위험' : (urlData.status as string) === 'warning' ? '주의' : '안전'}
+                        </StatusBadge>
+                      </div>
+                    )}
+                  </Section>
+                )}
+
+                {/* Identified Info */}
+                {identifiers.length > 0 && (
+                  <Section>
+                    <DetailTitle>특정된 정보</DetailTitle>
+                    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                      {identifiers.map((info, i) => (
+                        <InfoTag key={i} $type={info.type}>
+                          {info.type === 'PHONE' && '📞'}
+                          {info.type === 'ACCOUNT' && '🏦'}
+                          {info.type === 'SNS' && '👤'}
+                          {info.type === 'URL' && '🔗'}
+                          {' '}{info.label}
+                        </InfoTag>
+                      ))}
+                    </div>
+                  </Section>
+                )}
+
+                {/* Actions */}
+                <Section>
+                  <DetailTitle>신고 및 조치</DetailTitle>
+
+                  {reportSuccess && (
+                    <SuccessMessage>
+                      신고가 성공적으로 저장되었습니다
+                    </SuccessMessage>
+                  )}
+
+                  {scamReport.error && (
+                    <ErrorText style={{ marginBottom: '12px' }}>
+                      신고 저장 실패: {scamReport.error instanceof Error ? scamReport.error.message : '오류 발생'}
+                    </ErrorText>
+                  )}
+
+                  <ButtonRow>
+                    <OutlineButton
+                      href="https://ecrm.police.go.kr/minwon/main"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      경찰청 신고
+                    </OutlineButton>
+                    <DangerButton
+                      onClick={handleReport}
+                      disabled={reportSuccess || scamReport.isPending}
+                    >
+                      {scamReport.isPending ? '저장 중...' : reportSuccess ? '신고 완료' : '신고 저장'}
+                    </DangerButton>
+                  </ButtonRow>
+
+                  <div style={{ marginTop: '16px' }}>
+                    <SkipButton style={{ width: '100%', textAlign: 'center' }} onClick={resetAll}>
+                      처음부터 다시 분석
+                    </SkipButton>
+                  </div>
+                </Section>
+              </motion.div>
+            );
+          })()}
+
+          {/* Step 4 — API error state */}
+          {currentStep === 4 && !isAnalyzing && comprehensiveAnalysis.isError && (
+            <motion.div
+              key="step4-error"
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <Section>
+                <SectionTitle>분석 실패</SectionTitle>
+                <ErrorText>
+                  {comprehensiveAnalysis.error instanceof Error
+                    ? comprehensiveAnalysis.error.message
+                    : '분석 중 오류가 발생했습니다'}
+                </ErrorText>
+                <ButtonRow>
+                  <SkipButton onClick={resetAll}>처음으로</SkipButton>
+                  <PrimaryButton onClick={() => {
+                    comprehensiveAnalysis.reset();
+                    setApiResult(null);
+                    // re-trigger by re-entering step 4
+                    setCurrentStep(3);
+                    setTimeout(() => {
+                      setDirection(1);
+                      setCurrentStep(4);
+                    }, 50);
+                  }}>
+                    다시 시도
+                  </PrimaryButton>
+                </ButtonRow>
+              </Section>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Content>
 
       {/* Loading Overlay */}
-      {isLoading && (
+      {isAnalyzing && (
         <LoadingOverlay>
-          <div style={{ width: 200, height: 150 }}>
+          <div style={{ width: 200, height: 200 }}>
             <Lottie animationData={loadingAnimation} loop />
           </div>
-          <LoadingText>분석 중...</LoadingText>
-          {loadingText && <LoadingSubtext>{loadingText}</LoadingSubtext>}
+          <LoadingText>종합 분석 중...</LoadingText>
+          <LoadingSubtext>모든 항목을 한번에 분석하고 있습니다</LoadingSubtext>
         </LoadingOverlay>
+      )}
+
+      {/* Face Select Modal */}
+      {showFaceModal && detectedFaces.length > 0 && (
+        <ModalOverlay onClick={() => setShowFaceModal(false)}>
+          <ModalContent onClick={e => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>검색할 얼굴을 선택하세요</ModalTitle>
+              <ModalDesc>
+                {detectedFaces.length}개의 얼굴이 감지되었습니다
+              </ModalDesc>
+            </ModalHeader>
+
+            {/* 원본 이미지 + 얼굴 바운딩 박스 */}
+            {previewUrl && (
+              <FacePreviewWrapper>
+                <FacePreviewImage
+                  ref={previewImgRef}
+                  src={previewUrl}
+                  alt="업로드 이미지"
+                  onLoad={handlePreviewLoad}
+                />
+                {imgNaturalSize && detectedFaces.map((face) => {
+                  const { x, y, w, h } = face.facialArea;
+                  const pctLeft = (x / imgNaturalSize.w) * 100;
+                  const pctTop = (y / imgNaturalSize.h) * 100;
+                  const pctW = (w / imgNaturalSize.w) * 100;
+                  const pctH = (h / imgNaturalSize.h) * 100;
+                  const isSelected = selectedFaceIndex === face.index;
+
+                  return (
+                    <FaceBoundingBox
+                      key={face.index}
+                      $selected={isSelected}
+                      onClick={() => setSelectedFaceIndex(face.index)}
+                      style={{
+                        left: `${pctLeft}%`,
+                        top: `${pctTop}%`,
+                        width: `${pctW}%`,
+                        height: `${pctH}%`,
+                      }}
+                    >
+                      <FaceBboxLabel $selected={isSelected}>
+                        {face.index + 1}
+                      </FaceBboxLabel>
+                    </FaceBoundingBox>
+                  );
+                })}
+              </FacePreviewWrapper>
+            )}
+
+            {/* 크롭된 얼굴 그리드 */}
+            <FaceGridLabel>감지된 얼굴</FaceGridLabel>
+            <FaceGrid>
+              {detectedFaces.map((face) => (
+                <FaceCard
+                  key={face.index}
+                  $selected={selectedFaceIndex === face.index}
+                  onClick={() => setSelectedFaceIndex(face.index)}
+                >
+                  <img
+                    src={`data:image/jpeg;base64,${face.imageBase64}`}
+                    alt={`얼굴 ${face.index + 1}`}
+                  />
+                  {selectedFaceIndex === face.index && (
+                    <FaceCheckMark>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    </FaceCheckMark>
+                  )}
+                </FaceCard>
+              ))}
+            </FaceGrid>
+
+            <ModalFooter>
+              <ModalCancelBtn onClick={() => {
+                setSelectedFaceIndex(null);
+                setShowFaceModal(false);
+              }}>
+                선택 안 함
+              </ModalCancelBtn>
+              <ModalConfirmBtn
+                $disabled={selectedFaceIndex === null}
+                disabled={selectedFaceIndex === null}
+                onClick={() => setShowFaceModal(false)}
+              >
+                선택 완료
+              </ModalConfirmBtn>
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
       )}
     </Container>
   );

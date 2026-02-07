@@ -48,6 +48,39 @@ interface ProfileSearchResponse {
 }
 
 
+export interface DetectedFace {
+  index: number;
+  imageBase64: string;
+  facialArea: { x: number; y: number; w: number; h: number };
+  confidence: number;
+}
+
+interface FaceDetectResponse {
+  success: boolean;
+  data?: { faces: DetectedFace[]; count: number; message?: string };
+  error?: string;
+}
+
+export function useFaceDetect() {
+  return useMutation({
+    mutationFn: async (image: File): Promise<DetectedFace[]> => {
+      const formData = new FormData();
+      formData.append('image', image);
+
+      const response = await apiClient.postFormData<FaceDetectResponse>(
+        '/api/profile/detect-faces',
+        formData,
+      );
+
+      if (response.success && response.data) {
+        return response.data.faces;
+      }
+
+      throw new Error(response.error || '얼굴 감지 실패');
+    },
+  });
+}
+
 export function useProfileSearch() {
   return useMutation({
     mutationFn: async ({ image, query }: { image?: File; query?: string }): Promise<SearchResult> => {

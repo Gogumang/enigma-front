@@ -20,6 +20,7 @@
     "@tanstack/react-router": "^1.82.0",
     "@tanstack/react-router-devtools": "^1.157.17",
     "browser-image-compression": "^2.0.2",
+    "framer-motion": "^12.33.0",
     "immer": "^10.1.1",
     "lottie-react": "^2.4.1",
     "react": "^19.0.0",

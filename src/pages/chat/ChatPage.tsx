@@ -9,6 +9,7 @@ import safeAnimation from '@/shared/assets/lottie/safe.json';
 import warningAnimation from '@/shared/assets/lottie/warning.json';
 import dangerAnimation from '@/shared/assets/lottie/danger.json';
 import loadingAnimation from '@/shared/assets/lottie/loading.json';
+import screenshotScanAnimation from '@/shared/assets/lottie/screenshot-scan.json';
 
 // Types
 interface ChatMessage {
@@ -20,6 +21,7 @@ interface ChatMessage {
 // Styled Components
 const Container = styled.div`
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-secondary);
   display: flex;
   flex-direction: column;
@@ -168,7 +170,7 @@ const RoleLabel = styled.div`
 `;
 
 const InputArea = styled.div`
-  padding: 12px 16px 24px;
+  padding: 12px 16px max(24px, env(safe-area-inset-bottom));
   background: var(--bg-card);
   border-top: 1px solid var(--border-color);
 `;
@@ -460,6 +462,7 @@ export default function ChatPage() {
   const [editText, setEditText] = useState('');
   const [result, setResult] = useState<AnalysisData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingType, setLoadingType] = useState<'chat' | 'screenshot'>('chat');
 
   const chatRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -533,6 +536,7 @@ export default function ChatPage() {
       return;
     }
 
+    setLoadingType('screenshot');
     setIsLoading(true);
 
     try {
@@ -561,6 +565,7 @@ export default function ChatPage() {
   const handleAnalyze = async () => {
     if (messages.length === 0) return;
 
+    setLoadingType('chat');
     setIsLoading(true);
 
     try {
@@ -721,10 +726,10 @@ export default function ChatPage() {
       {/* 로딩 */}
       {isLoading && (
         <LoadingOverlay>
-          <div style={{ width: 200, height: 150 }}>
-            <Lottie animationData={loadingAnimation} loop />
+          <div style={{ width: 200, height: loadingType === 'screenshot' ? 200 : 150 }}>
+            <Lottie animationData={loadingType === 'screenshot' ? screenshotScanAnimation : loadingAnimation} loop />
           </div>
-          <LoadingText>분석 중...</LoadingText>
+          <LoadingText>{loadingType === 'screenshot' ? '스크린샷 텍스트 추출 중...' : '분석 중...'}</LoadingText>
         </LoadingOverlay>
       )}
 
