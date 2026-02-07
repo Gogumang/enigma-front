@@ -726,20 +726,16 @@ export default function ComprehensiveAnalyzePage() {
         try {
           // 첫 번째 이미지로 검색
           const profileResult = await profileSearch.mutateAsync({ image: profileImages[0].file });
-          const scammerCount = profileResult.scammerMatches?.length || 0;
           let profileScore = 0;
 
-          if (scammerCount > 0) {
-            const maxConfidence = Math.max(...profileResult.scammerMatches.map((m: { confidence: number }) => m.confidence));
-            profileScore = Math.min(100, 50 + maxConfidence * 50);
-          } else if (profileResult.totalFound > 10) {
+          if (profileResult.totalFound > 10) {
             profileScore = Math.min(40, profileResult.totalFound * 2);
           }
 
           analysisResults.profile = {
             score: profileScore,
             level: getLevel(profileScore),
-            scammerMatches: scammerCount,
+            scammerMatches: 0,
             totalFound: profileResult.totalFound,
           };
         } catch {

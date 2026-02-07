@@ -10,13 +10,6 @@ interface ProfileResult {
   matchScore: number;
 }
 
-interface ScammerMatch {
-  id: string;
-  name: string;
-  confidence: number;
-  reportCount: number;
-  reportedAt: Date;
-}
 
 interface ReverseSearchLink {
   platform: string;
@@ -36,7 +29,6 @@ interface WebImageResult {
 
 export interface SearchResult {
   totalFound: number;
-  scammerMatches: ScammerMatch[];
   reverseSearchLinks: ReverseSearchLink[];
   webImageResults: WebImageResult[];
   uploadedImageUrl: string | null;
@@ -55,11 +47,6 @@ interface ProfileSearchResponse {
   error?: string;
 }
 
-interface ReportResponse {
-  success: boolean;
-  data?: { message: string };
-  error?: string;
-}
 
 export function useProfileSearch() {
   return useMutation({
@@ -73,7 +60,6 @@ export function useProfileSearch() {
       if (response.success && response.data) {
         return {
           totalFound: response.data.totalFound ?? 0,
-          scammerMatches: response.data.scammerMatches ?? [],
           reverseSearchLinks: response.data.reverseSearchLinks ?? [],
           webImageResults: response.data.webImageResults ?? [],
           uploadedImageUrl: response.data.uploadedImageUrl ?? null,
@@ -92,20 +78,3 @@ export function useProfileSearch() {
   });
 }
 
-export function useScammerReport() {
-  return useMutation({
-    mutationFn: async ({ image, name }: { image: File; name: string }): Promise<{ message: string }> => {
-      const formData = new FormData();
-      formData.append('image', image);
-      formData.append('name', name.trim());
-
-      const response = await apiClient.postFormData<ReportResponse>('/api/profile/report', formData);
-
-      if (response.success && response.data) {
-        return response.data;
-      }
-
-      throw new Error(response.error || '신고 실패');
-    },
-  });
-}

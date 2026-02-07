@@ -10,71 +10,20 @@ const Container = styled.div`
   gap: 16px;
 `;
 
-const ResultCard = styled.div<{ $status: 'safe' | 'warning' | 'danger' }>`
-  padding: 28px 24px;
-  text-align: center;
-  border-radius: 16px;
-  background: ${props =>
-    props.$status === 'safe' ? '#e8f7f0' :
-    props.$status === 'warning' ? '#fff8e6' : '#ffebee'};
-`;
-
-const ResultIcon = styled.div<{ $status?: 'safe' | 'warning' | 'danger' }>`
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: center;
-
-  svg {
-    width: 48px;
-    height: 48px;
-    stroke: ${props =>
-      props.$status === 'safe' ? '#20c997' :
-      props.$status === 'warning' ? '#ff9500' : '#f04452'};
-  }
-`;
-
-const ResultTitle = styled.div<{ $status: 'safe' | 'warning' | 'danger' }>`
-  font-size: 20px;
-  font-weight: 700;
-  color: ${props =>
-    props.$status === 'safe' ? '#20c997' :
-    props.$status === 'warning' ? '#ff9500' : '#f04452'};
-  margin-bottom: 8px;
-`;
-
-const ResultDesc = styled.div`
-  font-size: 14px;
-  color: #6b7684;
-`;
-
-const ConfidenceBar = styled.div`
-  margin-top: 20px;
-`;
-
-const ConfidenceLabel = styled.div`
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  color: #6b7684;
-  margin-bottom: 10px;
-`;
-
-const ConfidenceTrack = styled.div`
-  height: 10px;
-  background: #e5e8eb;
-  border-radius: 5px;
+const UploadedImageWrapper = styled.div`
+  position: relative;
+  border-radius: 20px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
 `;
 
-const ConfidenceFill = styled.div<{ $value: number; $status: 'safe' | 'warning' | 'danger' }>`
-  height: 100%;
-  width: ${props => props.$value}%;
-  background: ${props =>
-    props.$status === 'safe' ? '#20c997' :
-    props.$status === 'warning' ? '#ff9500' : '#f04452'};
-  border-radius: 5px;
-  transition: width 0.5s ease;
+const UploadedImage = styled.img`
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
 `;
+
 
 const DetailCard = styled.div`
   background: #fff;
@@ -100,10 +49,10 @@ const DetailLabel = styled.div`
   color: #6b7684;
 `;
 
-const DetailValue = styled.div<{ $highlight?: boolean }>`
+const DetailValue = styled.div`
   font-size: 14px;
   font-weight: 600;
-  color: ${props => props.$highlight ? '#f04452' : '#191f28'};
+  color: #191f28;
 `;
 
 const SectionTitle = styled.div`
@@ -269,13 +218,6 @@ const EmptyState = styled.div`
   color: #6b7684;
 `;
 
-interface ScammerMatch {
-  id: string;
-  name: string;
-  confidence: number;
-  reportCount: number;
-}
-
 interface WebImageResult {
   title: string;
   sourceUrl: string;
@@ -302,7 +244,6 @@ interface ReverseSearchLink {
 
 interface SearchResult {
   totalFound: number;
-  scammerMatches: ScammerMatch[];
   webImageResults: WebImageResult[];
   reverseSearchLinks: ReverseSearchLink[];
   results: {
@@ -312,18 +253,22 @@ interface SearchResult {
     linkedin: ProfileResult[];
     google: ProfileResult[];
   };
-  searchQuery?: string;
   searchedAt?: string;
 }
 
 export default function ProfileSearchResultPage() {
   const navigate = useNavigate();
   const [result, setResult] = useState<SearchResult | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = sessionStore.get<SearchResult>('profileSearchResult');
     if (stored) {
       setResult(stored);
+    }
+    const storedImage = sessionStore.get<string>('profileSearchImage');
+    if (storedImage) {
+      setUploadedImage(storedImage);
     }
   }, []);
 
@@ -347,67 +292,6 @@ export default function ProfileSearchResultPage() {
     );
   }
 
-  const hasScammerMatch = result.scammerMatches && result.scammerMatches.length > 0;
-  const maxConfidence = hasScammerMatch
-    ? Math.max(...result.scammerMatches.map(s => s.confidence))
-    : 0;
-
-  const getStatus = (): 'safe' | 'warning' | 'danger' => {
-    if (maxConfidence >= 70) return 'danger';
-    if (maxConfidence >= 40) return 'warning';
-    return 'safe';
-  };
-
-  const status = getStatus();
-
-  const getResultContent = () => {
-    if (hasScammerMatch && maxConfidence >= 70) {
-      return {
-        title: '사기꾼 의심',
-        desc: '신고된 사기꾼과 일치하는 프로필이 발견되었습니다',
-      };
-    }
-    if (hasScammerMatch && maxConfidence >= 40) {
-      return {
-        title: '주의 필요',
-        desc: '유사한 프로필이 사기꾼 DB에서 발견되었습니다',
-      };
-    }
-    return {
-      title: '안전',
-      desc: '사기꾼 DB에서 일치하는 프로필이 없습니다',
-    };
-  };
-
-  const getStatusIcon = (s: 'safe' | 'warning' | 'danger') => {
-    if (s === 'danger') {
-      return (
-        <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-      );
-    }
-    if (s === 'warning') {
-      return (
-        <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      );
-    }
-    return (
-      <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-        <polyline points="22 4 12 14.01 9 11.01"/>
-      </svg>
-    );
-  };
-
-  const content = getResultContent();
-
   const allProfiles = [
     ...result.results.instagram,
     ...result.results.facebook,
@@ -419,41 +303,17 @@ export default function ProfileSearchResultPage() {
   return (
     <PageLayout title="검색 결과">
       <Container>
-        <ResultCard $status={status}>
-          <ResultIcon $status={status}>{getStatusIcon(status)}</ResultIcon>
-          <ResultTitle $status={status}>{content.title}</ResultTitle>
-          <ResultDesc>{content.desc}</ResultDesc>
-
-          {hasScammerMatch && (
-            <ConfidenceBar>
-              <ConfidenceLabel>
-                <span>사기꾼 일치율</span>
-                <span>{maxConfidence.toFixed(0)}%</span>
-              </ConfidenceLabel>
-              <ConfidenceTrack>
-                <ConfidenceFill $value={maxConfidence} $status={status} />
-              </ConfidenceTrack>
-            </ConfidenceBar>
-          )}
-        </ResultCard>
+        {uploadedImage && (
+          <UploadedImageWrapper>
+            <UploadedImage src={uploadedImage} alt="검색한 프로필" />
+          </UploadedImageWrapper>
+        )}
 
         <DetailCard>
           <DetailItem>
             <DetailLabel>검색 결과</DetailLabel>
             <DetailValue>{result.totalFound}건 발견</DetailValue>
           </DetailItem>
-          {hasScammerMatch && (
-            <DetailItem>
-              <DetailLabel>사기꾼 DB 매칭</DetailLabel>
-              <DetailValue $highlight>{result.scammerMatches.length}건 일치</DetailValue>
-            </DetailItem>
-          )}
-          {result.searchQuery && (
-            <DetailItem>
-              <DetailLabel>검색어</DetailLabel>
-              <DetailValue>{result.searchQuery}</DetailValue>
-            </DetailItem>
-          )}
           <DetailItem>
             <DetailLabel>검색 시간</DetailLabel>
             <DetailValue>
