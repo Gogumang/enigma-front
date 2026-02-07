@@ -619,7 +619,7 @@ const PostAction = styled.button<{ $platform?: string }>`
 `;
 
 // ========== 우측 사이드바 (채팅) ==========
-const RightSidebar = styled.div<{ $platform?: string }>`
+const RightSidebar = styled.div<{ $platform?: string; $showOnMobile?: boolean }>`
   width: 350px;
   min-width: 280px;
   background: #121212;
@@ -642,7 +642,7 @@ const RightSidebar = styled.div<{ $platform?: string }>`
 
   @media (max-width: 600px) {
     width: 100%;
-    min-width: none;
+    min-width: unset;
     position: fixed;
     top: 56px;
     right: 0;
@@ -650,6 +650,37 @@ const RightSidebar = styled.div<{ $platform?: string }>`
     left: auto;
     z-index: 100;
     background: #121212;
+    display: ${props => props.$showOnMobile ? 'flex' : 'none'};
+  }
+`;
+
+const FloatingChatButton = styled.button<{ $platform?: string }>`
+  position: fixed;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: ${props => {
+    const config = platformConfig[props.$platform || ''];
+    return config ? config.gradient : 'var(--accent-gradient)';
+  }};
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  z-index: 99;
+  transition: transform 0.2s;
+
+  &:active {
+    transform: scale(0.9);
+  }
+
+  @media (max-width: 600px) {
+    display: flex;
   }
 `;
 
@@ -849,6 +880,7 @@ const ChatPopupInputArea = styled.form`
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   background: #1a1a1a;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 `;
@@ -860,7 +892,7 @@ const ChatPopupInput = styled.input`
   border: none;
   border-radius: 18px;
   color: #fff;
-  font-size: 13px;
+  font-size: 16px;
   outline: none;
 
   &::placeholder {
@@ -1082,7 +1114,7 @@ const Input = styled.input`
   border: 1px solid var(--border-color);
   border-radius: 20px;
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
 
   &::placeholder {
@@ -1396,6 +1428,7 @@ const ShakingInput = styled.form<{ $shaking?: boolean }>`
   display: flex;
   gap: 8px;
   padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border-color);
   animation: ${props => props.$shaking ? shake : 'none'} 0.5s ease;
 `;
@@ -1592,7 +1625,7 @@ const PlatformInput = styled.input<{ $platform?: string }>`
   border: ${props => props.$platform === 'kakaotalk' ? '1px solid #e5e5e5' : `1px solid ${platformConfig[props.$platform || '']?.color || 'var(--border-color)'}40`};
   border-radius: 20px;
   color: ${props => props.$platform === 'kakaotalk' ? '#191f28' : 'var(--text-primary)'};
-  font-size: 14px;
+  font-size: 16px;
   outline: none;
 
   &::placeholder {
@@ -1614,6 +1647,7 @@ const KakaoInputArea = styled.form`
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   background: #fff;
   border-top: 1px solid #e5e5e5;
 `;
@@ -1755,6 +1789,7 @@ const TelegramInputArea = styled.form`
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   background: #fff;
   border-top: 1px solid #e5e5e5;
 `;
@@ -1765,7 +1800,7 @@ const TelegramInput = styled.input`
   background: #f1f1f1;
   border: none;
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 16px;
   color: #000;
   outline: none;
 
@@ -2321,6 +2356,9 @@ export default function TrainingPage() {
   const [profanityWarningInChat, setProfanityWarningInChat] = useState(false);
   const [inputShaking, setInputShaking] = useState(false);
   const [removingMessageId, setRemovingMessageId] = useState<string | null>(null);
+
+  // 모바일 채팅 토글 (SNS 플랫폼)
+  const [showMobileChat, setShowMobileChat] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const targetEmail = 'user@enigma.kr';
@@ -3041,7 +3079,7 @@ export default function TrainingPage() {
 
         {/* 우측 채팅 영역 - 소셜 미디어 스타일 */}
         {isSocialMediaStyle && (
-          <RightSidebar $platform={currentPlatform} style={{ width: '350px', maxWidth: '400px' }}>
+          <RightSidebar $platform={currentPlatform} $showOnMobile={showMobileChat} style={{ width: '350px', maxWidth: '400px' }}>
             <div style={{
               display: 'flex',
               flexDirection: 'column',
@@ -3070,13 +3108,16 @@ export default function TrainingPage() {
                 <span style={{ color: '#fff', fontSize: '16px', fontWeight: '600', flex: 1 }}>
                   {selectedPersona?.name}
                 </span>
-                <button style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(255,255,255,0.5)',
-                  fontSize: '18px',
-                  cursor: 'pointer'
-                }}>×</button>
+                <button
+                  onClick={() => setShowMobileChat(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.5)',
+                    fontSize: '18px',
+                    cursor: 'pointer'
+                  }}
+                >×</button>
               </div>
 
               <ChatPopupMessages>
@@ -3125,6 +3166,15 @@ export default function TrainingPage() {
               </ChatPopupInputArea>
             </div>
           </RightSidebar>
+        )}
+
+        {/* 모바일 채팅 열기 FAB (SNS 플랫폼) */}
+        {isSocialMediaStyle && !showMobileChat && (
+          <FloatingChatButton $platform={currentPlatform} onClick={() => setShowMobileChat(true)}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </FloatingChatButton>
         )}
 
         {/* 카카오톡 전용 UI */}
@@ -3302,7 +3352,7 @@ export default function TrainingPage() {
                     padding: '10px 0',
                     background: 'transparent',
                     border: 'none',
-                    fontSize: '14px',
+                    fontSize: '16px',
                     color: '#191f28',
                     outline: 'none'
                   }}

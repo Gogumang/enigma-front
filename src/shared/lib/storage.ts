@@ -51,3 +51,20 @@ export const sessionStore = {
     }
   },
 };
+
+// 메모리 스토어 (대용량 데이터용 - sessionStorage 5MB 제한 우회)
+const _memoryStore = new Map<string, unknown>();
+
+export const memoryStore = {
+  get<T>(key: string): T | null {
+    return (_memoryStore.get(key) as T) ?? null;
+  },
+
+  set<T>(key: string, value: T): void {
+    _memoryStore.set(key, value);
+  },
+
+  remove(key: string): void {
+    _memoryStore.delete(key);
+  },
+};

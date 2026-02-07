@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import styled from '@emotion/styled';
 import { PageLayout } from '@/shared/ui';
-import { sessionStore } from '@/shared/lib/storage';
+import { memoryStore } from '@/shared/lib/storage';
 
 const Container = styled.div`
   display: flex;
@@ -262,11 +262,11 @@ export default function ProfileSearchResultPage() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = sessionStore.get<SearchResult>('profileSearchResult');
+    const stored = memoryStore.get<SearchResult>('profileSearchResult');
     if (stored) {
       setResult(stored);
     }
-    const storedImage = sessionStore.get<string>('profileSearchImage');
+    const storedImage = memoryStore.get<string>('profileSearchImage');
     if (storedImage) {
       setUploadedImage(storedImage);
     }

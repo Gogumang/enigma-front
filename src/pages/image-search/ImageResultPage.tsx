@@ -4,7 +4,7 @@ import styled from '@emotion/styled';
 import { keyframes } from '@emotion/react';
 import Lottie from 'lottie-react';
 import { PageLayout } from '@/shared/ui';
-import { sessionStore } from '@/shared/lib/storage';
+import { memoryStore } from '@/shared/lib/storage';
 import type { DeepfakeResult } from '@/features/detect-deepfake';
 import safeAnimation from '@/shared/assets/lottie/safe.json';
 import warningAnimation from '@/shared/assets/lottie/warning.json';
@@ -445,7 +445,7 @@ export default function ImageResultPage() {
   const [showHeatmap, setShowHeatmap] = useState(false);
 
   useEffect(() => {
-    const stored = sessionStore.get<DeepfakeResult>('deepfakeResult');
+    const stored = memoryStore.get<DeepfakeResult>('deepfakeResult');
     if (stored) {
       setResult(stored);
     }

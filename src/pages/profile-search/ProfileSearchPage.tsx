@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import styled from '@emotion/styled';
 import { PageLayout, ImageDropzone } from '@/shared/ui';
 import { useProfileSearch } from '@/features/search-profile';
-import { sessionStore } from '@/shared/lib/storage';
+import { memoryStore } from '@/shared/lib/storage';
 
 const ContentWrapper = styled.div`
   max-width: 400px;
@@ -99,7 +99,7 @@ export default function ProfileSearchPage() {
         await new Promise<void>((resolve) => {
           const reader = new FileReader();
           reader.onload = () => {
-            sessionStore.set('profileSearchImage', reader.result as string);
+            memoryStore.set('profileSearchImage', reader.result as string);
             resolve();
           };
           reader.readAsDataURL(file);
@@ -111,7 +111,7 @@ export default function ProfileSearchPage() {
       });
 
       // 결과를 세션에 저장하고 결과 페이지로 이동
-      sessionStore.set('profileSearchResult', {
+      memoryStore.set('profileSearchResult', {
         ...data,
         searchedAt: new Date().toISOString(),
       });

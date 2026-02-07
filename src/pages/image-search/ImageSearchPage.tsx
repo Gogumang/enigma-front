@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import styled from '@emotion/styled';
 import { PageLayout, ImageDropzone } from '@/shared/ui';
 import { useDeepfakeAnalysis } from '@/features/detect-deepfake';
-import { sessionStore } from '@/shared/lib/storage';
+import { memoryStore } from '@/shared/lib/storage';
 
 const ContentWrapper = styled.div`
   max-width: 400px;
@@ -91,7 +91,7 @@ export default function ImageSearchPage() {
 
     try {
       const result = await deepfakeAnalysis.mutateAsync({ file, isVideo });
-      sessionStore.set('deepfakeResult', result);
+      memoryStore.set('deepfakeResult', result);
       navigate({ to: '/image-search/result' });
     } catch (err) {
       setError(err instanceof Error ? err.message : '서버 연결에 실패했습니다');
