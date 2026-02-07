@@ -20,7 +20,6 @@ export default defineConfig({
       webp: { quality: 80 },
       svg: {
         plugins: [
-          { name: 'removeViewBox', active: false },
           { name: 'sortAttrs' },
         ],
       },
