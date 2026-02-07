@@ -800,22 +800,22 @@ const services: ServiceItem[] = [
   {
     to: '/chat',
     title: '대화 분석',
-    iconUrl: '/icons/chat-bubble.png',
+    iconUrl: '/icons/chat-bubble.webp',
   },
   {
     to: '/image-search',
     title: '딥페이크 검사',
-    iconUrl: '/icons/camera.png',
+    iconUrl: '/icons/camera.webp',
   },
   {
     to: '/profile-search',
     title: '프로필 검색',
-    iconUrl: '/icons/megaphone.png',
+    iconUrl: '/icons/megaphone.webp',
   },
   {
     to: '/verify',
     title: '사기 검증',
-    iconUrl: '/icons/mobile.png',
+    iconUrl: '/icons/mobile.webp',
   },
 ];
 
@@ -823,7 +823,13 @@ function ServiceCardComponent({ service }: { service: ServiceItem }) {
   return (
     <ServiceCard to={service.to}>
       {service.iconUrl ? (
-        <IconImage src={service.iconUrl} alt={service.title} />
+        <IconImage
+          src={service.iconUrl}
+          srcSet={`${service.iconUrl.replace('.webp', '@1x.webp')} 1x, ${service.iconUrl.replace('.webp', '@2x.webp')} 2x`}
+          alt={service.title}
+          loading="lazy"
+          decoding="async"
+        />
       ) : service.Icon ? (
         <service.Icon />
       ) : null}
