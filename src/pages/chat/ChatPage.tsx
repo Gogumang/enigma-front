@@ -8,6 +8,7 @@ import type { AnalysisData } from '@/entities/analysis';
 import safeAnimation from '@/shared/assets/lottie/safe.json';
 import warningAnimation from '@/shared/assets/lottie/warning.json';
 import dangerAnimation from '@/shared/assets/lottie/danger.json';
+import loadingAnimation from '@/shared/assets/lottie/loading.json';
 
 // Types
 interface ChatMessage {
@@ -429,27 +430,19 @@ const LoadingOverlay = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
   z-index: 200;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 16px;
   color: #fff;
 `;
 
-const Spinner = styled.div`
-  width: 48px;
-  height: 48px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+const LoadingText = styled.div`
+  font-size: 16px;
+  font-weight: 500;
 `;
 
 const lottieAnimations = {
@@ -728,8 +721,10 @@ export default function ChatPage() {
       {/* 로딩 */}
       {isLoading && (
         <LoadingOverlay>
-          <Spinner />
-          <div>분석 중...</div>
+          <div style={{ width: 200, height: 150 }}>
+            <Lottie animationData={loadingAnimation} loop />
+          </div>
+          <LoadingText>분석 중...</LoadingText>
         </LoadingOverlay>
       )}
 

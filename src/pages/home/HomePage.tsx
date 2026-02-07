@@ -92,6 +92,10 @@ const NavInner = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  @media (max-width: 480px) {
+    padding: 12px 16px;
+  }
 `;
 
 const Logo = styled.h1`
@@ -110,6 +114,10 @@ const NavActions = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
 `;
 
 const ThemeToggle = styled.button`
@@ -148,10 +156,16 @@ const NavButton = styled.button`
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 14px;
+    font-size: 13px;
   }
 `;
 
@@ -166,10 +180,16 @@ const NavButtonSecondary = styled.button`
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+  white-space: nowrap;
 
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px 14px;
+    font-size: 13px;
   }
 `;
 
@@ -186,6 +206,14 @@ const HeroSection = styled.section`
   text-align: left;
   position: relative;
   z-index: 1;
+
+  @media (max-width: 768px) {
+    padding: 60px 20px 40px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 40px 16px 32px;
+  }
 `;
 
 const HeroTitle = styled.h2`
@@ -238,6 +266,7 @@ const ServiceGrid = styled.div`
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 16px;
+    padding: 0 16px 60px;
   }
 `;
 
@@ -259,6 +288,14 @@ const ServiceCard = styled(Link)`
     box-shadow: var(--shadow-card-hover);
     border-color: transparent;
   }
+
+  @media (max-width: 768px) {
+    padding: 24px 20px 20px;
+    min-height: auto;
+    flex-direction: row;
+    gap: 16px;
+    border-radius: 16px;
+  }
 `;
 
 // 3D Icon Image - using local 3D icons with transparent background
@@ -273,6 +310,13 @@ const IconImage = styled.img`
   ${ServiceCard}:hover & {
     transform: scale(1.15) translateY(-8px);
     filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.2));
+  }
+
+  @media (max-width: 768px) {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 0;
+    flex-shrink: 0;
   }
 `;
 
@@ -289,6 +333,10 @@ const ContactsSection = styled.section`
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px 100px;
+
+  @media (max-width: 768px) {
+    padding: 0 16px 60px;
+  }
 `;
 
 const SectionHeader = styled.div`
@@ -312,6 +360,10 @@ const SectionTitle = styled.h3`
   color: var(--text-primary);
   margin: 0;
   transition: color 0.3s ease;
+
+  @media (max-width: 768px) {
+    font-size: 24px;
+  }
 `;
 
 const ContactsList = styled.div`
@@ -410,6 +462,11 @@ const MessengerGrid = styled.div`
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin-bottom: 24px;
+
+  @media (max-width: 360px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
 `;
 
 const MessengerBtn = styled.button<{ $active: boolean }>`
@@ -581,6 +638,14 @@ const TrainingServiceCard = styled.button`
     transform: translateY(-12px);
     box-shadow: var(--shadow-card-hover);
     border-color: transparent;
+  }
+
+  @media (max-width: 768px) {
+    padding: 24px 20px 20px;
+    min-height: auto;
+    flex-direction: row;
+    gap: 16px;
+    border-radius: 16px;
   }
 `;
 

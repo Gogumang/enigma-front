@@ -8,6 +8,7 @@ import { useProfileSearch } from '@/features/search-profile';
 import safeAnimation from '@/shared/assets/lottie/safe.json';
 import warningAnimation from '@/shared/assets/lottie/warning.json';
 import dangerAnimation from '@/shared/assets/lottie/danger.json';
+import loadingAnimation from '@/shared/assets/lottie/loading.json';
 
 interface ChatMessage {
   id: string;
@@ -135,82 +136,6 @@ const SectionStatus = styled.span<{ $completed: boolean }>`
   color: ${props => props.$completed ? '#10b981' : 'var(--text-tertiary)'};
 `;
 
-const UploadArea = styled.div<{ $hasContent: boolean }>`
-  border: 2px dashed ${props => props.$hasContent ? 'var(--accent-primary)' : 'var(--border-color)'};
-  border-radius: 16px;
-  padding: 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: ${props => props.$hasContent ? 'rgba(16, 185, 129, 0.05)' : 'transparent'};
-
-  &:hover {
-    border-color: var(--accent-primary);
-    background: rgba(16, 185, 129, 0.05);
-  }
-`;
-
-const UploadIcon = styled.div`
-  font-size: 32px;
-  margin-bottom: 8px;
-`;
-
-const UploadText = styled.div`
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-`;
-
-const UploadedPreview = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  margin-top: 12px;
-`;
-
-const PreviewImage = styled.img`
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
-  object-fit: cover;
-`;
-
-const PreviewInfo = styled.div`
-  flex: 1;
-`;
-
-const PreviewName = styled.div`
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-`;
-
-const PreviewMeta = styled.div`
-  font-size: 12px;
-  color: var(--text-tertiary);
-`;
-
-const RemoveButton = styled.button`
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: none;
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background: #fee2e2;
-    color: #ef4444;
-  }
-`;
-
 const ChatPreview = styled.div`
   max-height: 200px;
   overflow-y: auto;
@@ -268,21 +193,8 @@ const LoadingOverlay = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 16px;
   color: #fff;
-`;
-
-const Spinner = styled.div`
-  width: 48px;
-  height: 48px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
 `;
 
 const LoadingText = styled.div`
@@ -293,7 +205,6 @@ const LoadingText = styled.div`
 const LoadingSubtext = styled.div`
   font-size: 14px;
   color: rgba(255,255,255,0.7);
-  margin-top: 8px;
 `;
 
 // Result Modal
@@ -967,9 +878,11 @@ export default function ComprehensiveAnalyzePage() {
       {/* 로딩 */}
       {isLoading && (
         <LoadingOverlay>
-          <Spinner />
+          <div style={{ width: 200, height: 150 }}>
+            <Lottie animationData={loadingAnimation} loop />
+          </div>
           <LoadingText>분석 중...</LoadingText>
-          <LoadingSubtext>{loadingStep}</LoadingSubtext>
+          {loadingStep && <LoadingSubtext>{loadingStep}</LoadingSubtext>}
         </LoadingOverlay>
       )}
 
