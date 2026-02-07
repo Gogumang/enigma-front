@@ -122,24 +122,23 @@ const TextInput = styled.input`
   &::placeholder { color: var(--text-tertiary); }
 `;
 
-const TextArea = styled.textarea`
-  width: 100%;
-  padding: 14px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--bg-card);
-  font-size: 15px;
-  color: var(--text-primary);
-  resize: vertical;
-  min-height: 120px;
-  font-family: inherit;
+const TabRow = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+const Tab = styled.button<{ $active: boolean }>`
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1.5px solid ${p => p.$active ? 'var(--accent-primary)' : 'var(--border-color)'};
+  background: ${p => p.$active ? 'rgba(16, 185, 129, 0.08)' : 'transparent'};
+  color: ${p => p.$active ? 'var(--accent-primary)' : 'var(--text-secondary)'};
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.2s;
-  &:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-  }
-  &::placeholder { color: var(--text-tertiary); }
 `;
 
 const ButtonRow = styled.div`
@@ -692,13 +691,8 @@ export default function ComprehensiveAnalyzePage() {
   const previewImgRef = useRef<HTMLImageElement>(null);
 
   // Step 2 state — data only
-  const [chatText, setChatText] = useState('');
-  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
-
-  // Step 3 state — data only
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [urlInput, setUrlInput] = useState('');
+  const [contactType, setContactType] = useState<'phone' | 'account' | 'url'>('phone');
+  const [contactValue, setContactValue] = useState('');
 
   // Step 4 state
   const [reportSuccess, setReportSuccess] = useState(false);
@@ -751,29 +745,17 @@ export default function ComprehensiveAnalyzePage() {
     }
   }, [faceDetect]);
 
-  // ==================== Step 2: Chat Data Collection ====================
-
-  const handleScreenshotSelect = useCallback((file: File) => {
-    setScreenshotFile(file);
-  }, []);
-
-  // ==================== Step 4: Fire comprehensive API ====================
+  // ==================== Step 3: Fire comprehensive API ====================
 
   useEffect(() => {
-    if (currentStep === 4 && !apiResult && !isAnalyzing && !comprehensiveAnalysis.isError) {
-      // Collect all data and fire API
-      const chatMessages = chatText.trim()
-        ? chatText.split('\n').filter(l => l.trim())
-        : undefined;
-
+    if (currentStep === 3 && !apiResult && !isAnalyzing && !comprehensiveAnalysis.isError) {
+      const val = contactValue.trim();
       comprehensiveAnalysis.mutate(
         {
           image: selectedFile ?? undefined,
-          chatMessages,
-          chatScreenshot: screenshotFile ?? undefined,
-          phone: phoneNumber.trim() || undefined,
-          account: accountNumber.trim() || undefined,
-          url: urlInput.trim() || undefined,
+          phone: contactType === 'phone' && val ? val : undefined,
+          account: contactType === 'account' && val ? val : undefined,
+          url: contactType === 'url' && val ? val : undefined,
         },
         {
           onSuccess: (data) => {
@@ -865,7 +847,7 @@ export default function ComprehensiveAnalyzePage() {
     }
 
     if ((fraudData?.phone?.status as string) === 'danger') {
-      const displayValue = (fraudData?.phone?.displayValue as string) || phoneNumber;
+      const displayValue = (fraudData?.phone?.displayValue as string) || (contactType === 'phone' ? contactValue : '');
       reasons.push(`전화번호 ${displayValue}가 사기 이력에 등록되어 있습니다`);
     }
     if ((fraudData?.account?.status as string) === 'danger') {
@@ -889,15 +871,16 @@ export default function ComprehensiveAnalyzePage() {
 
   const collectIdentifiers = (): IdentifiedInfo[] => {
     const infos: IdentifiedInfo[] = [];
+    const val = contactValue.trim();
 
-    if (phoneNumber.trim()) {
-      infos.push({ type: 'PHONE', value: phoneNumber.trim(), label: phoneNumber.trim() });
+    if (val && contactType === 'phone') {
+      infos.push({ type: 'PHONE', value: val, label: val });
     }
-    if (accountNumber.trim()) {
-      infos.push({ type: 'ACCOUNT', value: accountNumber.trim(), label: accountNumber.trim() });
+    if (val && contactType === 'account') {
+      infos.push({ type: 'ACCOUNT', value: val, label: val });
     }
-    if (urlInput.trim()) {
-      infos.push({ type: 'URL', value: urlInput.trim(), label: urlInput.trim() });
+    if (val && contactType === 'url') {
+      infos.push({ type: 'URL', value: val, label: val });
     }
 
     // SNS profiles from profile search
@@ -949,11 +932,8 @@ export default function ComprehensiveAnalyzePage() {
     setDirection(-1);
     setCurrentStep(1);
     setSelectedFile(null);
-    setChatText('');
-    setScreenshotFile(null);
-    setPhoneNumber('');
-    setAccountNumber('');
-    setUrlInput('');
+    setContactType('phone');
+    setContactValue('');
     setReportSuccess(false);
     setApiResult(null);
     comprehensiveAnalysis.reset();
@@ -1049,7 +1029,7 @@ export default function ComprehensiveAnalyzePage() {
             </motion.div>
           )}
 
-          {/* Step 2: Chat — data collection only */}
+          {/* Step 2: Contact Info — data collection only */}
           {currentStep === 2 && (
             <motion.div
               key="step2"
@@ -1061,99 +1041,52 @@ export default function ComprehensiveAnalyzePage() {
               transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
               <Section>
-                <SectionTitle>대화 내용 분석</SectionTitle>
-                <SectionDesc>대화 텍스트를 입력하거나 스크린샷을 업로드하세요</SectionDesc>
-
-                <InputGroup>
-                  <InputLabel>대화 내용 붙여넣기</InputLabel>
-                  <TextArea
-                    value={chatText}
-                    onChange={e => setChatText(e.target.value)}
-                    placeholder={'대화 내용을 붙여넣어 주세요\n\n예:\n나: 안녕하세요\n상대: 안녕, 요즘 투자에 관심 있어?\n나: 무슨 투자요?'}
-                  />
-                </InputGroup>
-
-                <InputGroup>
-                  <InputLabel>또는 대화 스크린샷 업로드</InputLabel>
-                  <ImageDropzone
-                    onFileSelect={handleScreenshotSelect}
-                    accept="image"
-                    title="대화 스크린샷"
-                    hint="카카오톡, 라인 등의 대화 캡쳐"
-                  />
-                </InputGroup>
-
-                <ButtonRow>
-                  <SkipButton onClick={goNext}>건너뛰기</SkipButton>
-                  <PrimaryButton
-                    $disabled={!chatText.trim() && !screenshotFile}
-                    disabled={!chatText.trim() && !screenshotFile}
-                    onClick={goNext}
-                  >
-                    다음
-                  </PrimaryButton>
-                </ButtonRow>
-              </Section>
-            </motion.div>
-          )}
-
-          {/* Step 3: Contact Info — data collection only */}
-          {currentStep === 3 && (
-            <motion.div
-              key="step3"
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.3, ease: 'easeInOut' }}
-            >
-              <Section>
                 <SectionTitle>연락처 정보 확인</SectionTitle>
-                <SectionDesc>전화번호, 계좌번호, URL을 확인합니다</SectionDesc>
+                <SectionDesc>확인할 정보 유형을 선택하고 입력하세요</SectionDesc>
+
+                <TabRow>
+                  <Tab $active={contactType === 'phone'} onClick={() => { setContactType('phone'); setContactValue(''); }}>
+                    전화번호
+                  </Tab>
+                  <Tab $active={contactType === 'account'} onClick={() => { setContactType('account'); setContactValue(''); }}>
+                    계좌번호
+                  </Tab>
+                  <Tab $active={contactType === 'url'} onClick={() => { setContactType('url'); setContactValue(''); }}>
+                    URL
+                  </Tab>
+                </TabRow>
 
                 <InputGroup>
-                  <InputLabel>전화번호</InputLabel>
-                  <TextInput
-                    value={phoneNumber}
-                    onChange={e => setPhoneNumber(e.target.value)}
-                    placeholder="01012345678"
-                    type="tel"
-                  />
-                </InputGroup>
-
-                <InputGroup>
-                  <InputLabel>계좌번호</InputLabel>
-                  <TextInput
-                    value={accountNumber}
-                    onChange={e => setAccountNumber(e.target.value)}
-                    placeholder="123-456-7890123"
-                  />
-                </InputGroup>
-
-                <InputGroup>
-                  <InputLabel>의심 URL</InputLabel>
-                  <UrlInputWrapper>
-                    <UrlPrefix>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="2" y1="12" x2="22" y2="12" />
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                      </svg>
-                    </UrlPrefix>
-                    <UrlTextInput
-                      value={urlInput}
-                      onChange={e => setUrlInput(e.target.value)}
-                      placeholder="example.com"
+                  {contactType === 'url' ? (
+                    <UrlInputWrapper>
+                      <UrlPrefix>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="2" y1="12" x2="22" y2="12" />
+                          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                        </svg>
+                      </UrlPrefix>
+                      <UrlTextInput
+                        value={contactValue}
+                        onChange={e => setContactValue(e.target.value)}
+                        placeholder="example.com"
+                      />
+                    </UrlInputWrapper>
+                  ) : (
+                    <TextInput
+                      value={contactValue}
+                      onChange={e => setContactValue(e.target.value)}
+                      placeholder={contactType === 'phone' ? '01012345678' : '123-456-7890123'}
+                      type={contactType === 'phone' ? 'tel' : 'text'}
                     />
-                  </UrlInputWrapper>
+                  )}
                 </InputGroup>
 
                 <ButtonRow>
                   <SkipButton onClick={goNext}>건너뛰기</SkipButton>
                   <PrimaryButton
-                    $disabled={!phoneNumber.trim() && !accountNumber.trim() && !urlInput.trim()}
-                    disabled={!phoneNumber.trim() && !accountNumber.trim() && !urlInput.trim()}
+                    $disabled={!contactValue.trim()}
+                    disabled={!contactValue.trim()}
                     onClick={goNext}
                   >
                     분석 시작
@@ -1163,8 +1096,8 @@ export default function ComprehensiveAnalyzePage() {
             </motion.div>
           )}
 
-          {/* Step 4: Results */}
-          {currentStep === 4 && apiResult && (() => {
+          {/* Step 3: Results */}
+          {currentStep === 3 && apiResult && (() => {
             const { deepfakeData, chatData, fraudData, urlData } = mapApiResultToStepData(apiResult);
             const { entries, overallScore } = computeScores();
             const level = getLevel(overallScore);
@@ -1174,7 +1107,7 @@ export default function ComprehensiveAnalyzePage() {
 
             return (
               <motion.div
-                key="step4"
+                key="step3"
                 custom={direction}
                 variants={slideVariants}
                 initial="enter"
@@ -1281,7 +1214,7 @@ export default function ComprehensiveAnalyzePage() {
                     <DetailTitle>연락처/URL 조회 결과</DetailTitle>
                     {fraudData?.phone && (
                       <div style={{ marginBottom: '8px', fontSize: '14px' }}>
-                        전화번호 ({(fraudData.phone.displayValue as string) || phoneNumber}):
+                        전화번호 ({(fraudData.phone.displayValue as string) || contactValue}):
                         <StatusBadge $status={(fraudData.phone.status as string) === 'danger' ? 'danger' : 'safe'}>
                           {(fraudData.phone.status as string) === 'danger' ? '사기 이력 있음' : '이력 없음'}
                         </StatusBadge>
@@ -1329,37 +1262,41 @@ export default function ComprehensiveAnalyzePage() {
 
                 {/* Actions */}
                 <Section>
-                  <DetailTitle>신고 및 조치</DetailTitle>
+                  {contactValue.trim() && (
+                    <>
+                      <DetailTitle>신고 및 조치</DetailTitle>
 
-                  {reportSuccess && (
-                    <SuccessMessage>
-                      신고가 성공적으로 저장되었습니다
-                    </SuccessMessage>
+                      {reportSuccess && (
+                        <SuccessMessage>
+                          신고가 성공적으로 저장되었습니다
+                        </SuccessMessage>
+                      )}
+
+                      {scamReport.error && (
+                        <ErrorText style={{ marginBottom: '12px' }}>
+                          신고 저장 실패: {scamReport.error instanceof Error ? scamReport.error.message : '오류 발생'}
+                        </ErrorText>
+                      )}
+
+                      <ButtonRow>
+                        <OutlineButton
+                          href="https://ecrm.police.go.kr/minwon/main"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          경찰청 신고
+                        </OutlineButton>
+                        <DangerButton
+                          onClick={handleReport}
+                          disabled={reportSuccess || scamReport.isPending}
+                        >
+                          {scamReport.isPending ? '저장 중...' : reportSuccess ? '신고 완료' : '신고 저장'}
+                        </DangerButton>
+                      </ButtonRow>
+                    </>
                   )}
 
-                  {scamReport.error && (
-                    <ErrorText style={{ marginBottom: '12px' }}>
-                      신고 저장 실패: {scamReport.error instanceof Error ? scamReport.error.message : '오류 발생'}
-                    </ErrorText>
-                  )}
-
-                  <ButtonRow>
-                    <OutlineButton
-                      href="https://ecrm.police.go.kr/minwon/main"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      경찰청 신고
-                    </OutlineButton>
-                    <DangerButton
-                      onClick={handleReport}
-                      disabled={reportSuccess || scamReport.isPending}
-                    >
-                      {scamReport.isPending ? '저장 중...' : reportSuccess ? '신고 완료' : '신고 저장'}
-                    </DangerButton>
-                  </ButtonRow>
-
-                  <div style={{ marginTop: '16px' }}>
+                  <div style={{ marginTop: contactValue.trim() ? '16px' : '0' }}>
                     <SkipButton style={{ width: '100%', textAlign: 'center' }} onClick={resetAll}>
                       처음부터 다시 분석
                     </SkipButton>
@@ -1369,10 +1306,10 @@ export default function ComprehensiveAnalyzePage() {
             );
           })()}
 
-          {/* Step 4 — API error state */}
-          {currentStep === 4 && !isAnalyzing && comprehensiveAnalysis.isError && (
+          {/* Step 3 — API error state */}
+          {currentStep === 3 && !isAnalyzing && comprehensiveAnalysis.isError && (
             <motion.div
-              key="step4-error"
+              key="step3-error"
               custom={direction}
               variants={slideVariants}
               initial="enter"
@@ -1392,11 +1329,11 @@ export default function ComprehensiveAnalyzePage() {
                   <PrimaryButton onClick={() => {
                     comprehensiveAnalysis.reset();
                     setApiResult(null);
-                    // re-trigger by re-entering step 4
-                    setCurrentStep(3);
+                    // re-trigger by re-entering step 3
+                    setCurrentStep(2);
                     setTimeout(() => {
                       setDirection(1);
-                      setCurrentStep(4);
+                      setCurrentStep(3);
                     }, 50);
                   }}>
                     다시 시도
