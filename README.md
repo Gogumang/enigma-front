@@ -6,20 +6,29 @@ AI 기반 로맨스 스캠 예방 서비스
 
 ## 주요 기능
 
-### 딥페이크 검사기 (`/image-search`)
+### 종합 분석 (`/analyze`)
+- 다단계 위저드 방식의 종합 스캠 분석
+- 이미지 업로드 → 대화 스크린샷 → 연락처 정보 입력 → 결과 확인
+- 딥페이크 + 프로필 역검색 + 대화 분석 + 사기 이력 + URL 검사를 한번에 수행
+- 얼굴 감지 및 선택 기능
+
+### 간편 검증 (`/verify`)
+- URL, 전화번호, 계좌번호를 하나의 입력창에서 자동 판별
+- 입력 유형에 따라 피싱/사기 이력 자동 검사
+
+### 딥페이크 검사 (`/image-search`)
 - 이미지/영상 드래그 앤 드롭 업로드
 - AI 기반 딥페이크 분석
 - 자동 이미지 압축
 
 ### 대화 분석 (`/chat`)
 - 텍스트 대화 분석
-- 스크린샷 분석
+- 스크린샷 OCR 분석
 - 로맨스 스캠 패턴 탐지
 
 ### 프로필 검색 (`/profile-search`)
 - 이미지 기반 역검색
 - 스캐머 DB 조회
-- 스캐머 신고
 
 ### URL 검사 (`/url`)
 - 피싱 URL 탐지
@@ -31,20 +40,29 @@ AI 기반 로맨스 스캠 예방 서비스
 
 ### 면역 훈련 (`/training`)
 - AI 스캐머와 대화 시뮬레이션
+- 플랫폼별 채팅 UI (카카오톡, 텔레그램, 인스타그램/페이스북)
 - 스캠 대응력 점수 측정
 - 사용된 전술 분석
+
+### 스캠 신고
+- 스캠 신고 접수
+- 기존 신고 이력 확인
+- AI 기반 신고 가이드 생성 (긴급 조치, 신고 절차, 유관 기관 안내)
 
 ## 기술 스택
 
 | 분류 | 기술 |
 |------|------|
-| **Framework** | React 19 + Vite |
-| **Language** | TypeScript |
+| **Framework** | React 19 + Vite 6 |
+| **Language** | TypeScript 5.6 |
 | **Routing** | TanStack Router |
 | **Data Fetching** | TanStack Query |
-| **State** | Zustand (persist) |
+| **State** | Zustand 5 (persist + immer) |
 | **Styling** | Emotion (CSS-in-JS) |
+| **Animation** | Framer Motion, Lottie |
+| **Form** | React Hook Form + Zod |
 | **File Upload** | react-dropzone + browser-image-compression |
+| **Lint/Format** | Biome |
 | **Architecture** | Feature-Sliced Design (FSD) |
 
 ## 환경 변수
@@ -83,30 +101,40 @@ src/
 │   ├── training.tsx            # → TrainingPage
 │   ├── url.tsx                 # → UrlPage
 │   ├── fraud.tsx               # → FraudPage
-│   ├── profile-search.tsx      # → ProfileSearchPage
+│   ├── analyze/
+│   │   ├── index.tsx           # → ComprehensiveAnalyzePage
+│   │   └── $id.tsx             # → AnalyzePage (동적 라우트)
 │   ├── image-search/
 │   │   ├── index.tsx           # → ImageSearchPage
 │   │   └── result.tsx          # → ImageResultPage
-│   └── analyze/
-│       └── $id.tsx             # → AnalyzePage (동적 라우트)
+│   ├── profile-search/
+│   │   ├── index.tsx           # → ProfileSearchPage
+│   │   └── result.tsx          # → ProfileSearchResultPage
+│   └── verify/
+│       ├── index.tsx           # → VerifyPage
+│       └── result.tsx          # → VerifyResultPage
 │
 ├── pages/                      # 페이지 컴포넌트
 │   ├── home/
 │   ├── chat/
-│   ├── training/
+│   ├── training/               # 플랫폼별 채팅 UI 포함
 │   ├── url/
 │   ├── fraud/
-│   ├── profile-search/
+│   ├── verify/
 │   ├── image-search/
-│   └── analyze/
+│   ├── profile-search/
+│   └── analyze/                # 다단계 위저드 컴포넌트 포함
 │
-├── features/                   # 비즈니스 로직 (TanStack Query hooks, Zustand stores)
+├── features/                   # 비즈니스 로직 (TanStack Query hooks)
 │   ├── analyze-chat/           # 대화 분석 API
+│   ├── analyze-comprehensive/  # 종합 분석 API
 │   ├── check-url/              # URL 검사 API
 │   ├── check-fraud/            # 사기 이력 조회 API
 │   ├── detect-deepfake/        # 딥페이크 분석 API
 │   ├── search-profile/         # 프로필 검색 API
 │   ├── immune-training/        # 면역 훈련 API
+│   ├── report-scam/            # 스캠 신고 API
+│   ├── verify/                 # 간편 검증 API
 │   └── manage-contacts/        # 연락처 관리 (Zustand store)
 │
 ├── entities/                   # 비즈니스 엔티티
@@ -120,6 +148,12 @@ src/
     │   └── client.ts           # API 클라이언트
     ├── config/
     │   └── env.ts              # 환경 변수
+    ├── stores/
+    │   └── themeStore.ts       # 다크 모드 (Zustand)
+    ├── styles/
+    │   └── theme.ts            # 테마 설정
+    ├── assets/
+    │   └── lottie/             # Lottie 애니메이션
     ├── lib/
     │   ├── storage.ts          # localStorage/sessionStorage
     │   └── utils.ts
@@ -130,50 +164,7 @@ src/
         ├── Card/
         ├── Modal/
         ├── ImageDropzone/      # 드래그앤드롭 이미지 업로드
-        └── icons/
-```
-
-## 주요 라이브러리 사용법
-
-### TanStack Query (데이터 페칭)
-```tsx
-// features/check-url/api/urlApi.ts
-export function useUrlCheck() {
-  return useMutation({
-    mutationFn: async (url: string) => {
-      return apiClient.post('/api/url/check', { url });
-    },
-  });
-}
-
-// 페이지에서 사용
-const urlCheck = useUrlCheck();
-await urlCheck.mutateAsync('https://example.com');
-```
-
-### Zustand (상태 관리)
-```tsx
-// features/manage-contacts/model/contactsStore.ts
-export const useContactsStore = create(
-  persist(
-    immer((set) => ({
-      contacts: [],
-      addContact: (contact) => set((s) => { s.contacts.unshift(contact); }),
-    })),
-    { name: 'enigma-contacts' }
-  )
-);
-```
-
-### ImageDropzone (이미지 업로드)
-```tsx
-<ImageDropzone
-  onFileSelect={(file) => setFile(file)}
-  accept="image+video"    // 'image' 또는 'image+video'
-  title="이미지를 업로드하세요"
-  hint="드래그하거나 클릭"
-  maxSizeMB={5}           // 초과시 자동 압축
-/>
+        └── icons/              # 아이콘 컴포넌트 (27종)
 ```
 
 ## 백엔드 연동
@@ -185,7 +176,3 @@ export const useContactsStore = create(
 cd ../deepfake-detector-py
 uv run python -m src.main
 ```
-
-## 기존 Next.js 파일
-
-마이그레이션 후 `src/app/`, `src/components/`, `src/lib/` 폴더의 기존 Next.js 파일들은 삭제해도 됩니다.
