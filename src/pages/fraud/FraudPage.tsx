@@ -24,13 +24,6 @@ import {
   WarningItem,
   RecommendationList,
   RecommendationItem,
-  LinkList,
-  LinkItem,
-  LinkIcon,
-  LinkInfo,
-  LinkName,
-  LinkDesc,
-  LinkArrow,
 } from './FraudPage.styles';
 
 type CheckType = 'PHONE' | 'ACCOUNT';
@@ -74,14 +67,6 @@ export default function FraudPage() {
     } catch {
       alert('조회 실패');
     }
-  };
-
-  const getLinkIcon = (name: string) => {
-    if (name.includes('더치트')) return '🔍';
-    if (name.includes('경찰')) return '👮';
-    if (name.includes('금융')) return '🏛️';
-    if (name.includes('국가정보원')) return '🛡️';
-    return '🔗';
   };
 
   return (
@@ -184,24 +169,6 @@ export default function FraudPage() {
             </Section>
           )}
 
-          {/* 추가 확인 링크 */}
-          {result.additionalLinks && result.additionalLinks.length > 0 && (
-            <Section>
-              <SectionTitle>🔗 직접 확인하기</SectionTitle>
-              <LinkList>
-                {result.additionalLinks.map((link, i) => (
-                  <LinkItem key={i} href={link.url} target="_blank" rel="noopener noreferrer">
-                    <LinkIcon>{getLinkIcon(link.name)}</LinkIcon>
-                    <LinkInfo>
-                      <LinkName>{link.name}</LinkName>
-                      <LinkDesc>{link.description}</LinkDesc>
-                    </LinkInfo>
-                    <LinkArrow>→</LinkArrow>
-                  </LinkItem>
-                ))}
-              </LinkList>
-            </Section>
-          )}
         </>
       )}
     </PageLayout>

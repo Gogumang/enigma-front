@@ -26,13 +26,6 @@ import {
   RedirectChain,
   RedirectItem,
   RedirectNumber,
-  LinkList,
-  LinkItem,
-  LinkIcon,
-  LinkInfo,
-  LinkName,
-  LinkDesc,
-  LinkArrow,
   RetryButton,
 } from './VerifyResultPage.styles';
 
@@ -46,13 +39,6 @@ const statusTitles = {
   safe: '안전해 보여요',
   warning: '주의가 필요해요',
   danger: '위험해요!',
-};
-
-const getLinkIcon = (name: string) => {
-  if (name.includes('더치트')) return '🔍';
-  if (name.includes('경찰')) return '👮';
-  if (name.includes('금융')) return '🏛️';
-  return '🔗';
 };
 
 export default function VerifyResultPage() {
@@ -188,25 +174,6 @@ export default function VerifyResultPage() {
               </RecommendationItem>
             ))}
           </RecommendationList>
-        </Section>
-      )}
-
-      {/* 추가 확인 링크 */}
-      {result.additionalLinks && result.additionalLinks.length > 0 && (
-        <Section>
-          <SectionTitle>🔗 직접 확인하기</SectionTitle>
-          <LinkList>
-            {result.additionalLinks.map((link: { name: string; url: string; description: string }, i: number) => (
-              <LinkItem key={i} href={link.url} target="_blank" rel="noopener noreferrer">
-                <LinkIcon>{getLinkIcon(link.name)}</LinkIcon>
-                <LinkInfo>
-                  <LinkName>{link.name}</LinkName>
-                  <LinkDesc>{link.description}</LinkDesc>
-                </LinkInfo>
-                <LinkArrow>→</LinkArrow>
-              </LinkItem>
-            ))}
-          </LinkList>
         </Section>
       )}
 
