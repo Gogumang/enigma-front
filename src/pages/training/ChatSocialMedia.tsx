@@ -87,8 +87,10 @@ export default function ChatSocialMedia({
             style={{
               background: 'none',
               border: 'none',
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: '18px',
+              color: 'rgba(255,255,255,0.7)',
+              fontSize: '28px',
+              lineHeight: 1,
+              padding: '4px 8px',
               cursor: 'pointer',
             }}
           >

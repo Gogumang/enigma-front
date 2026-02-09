@@ -812,14 +812,14 @@ export const RightSidebar = styled.div<{ $platform?: string; $showOnMobile?: boo
     right: 0;
     bottom: 0;
     top: auto;
-    max-height: 80vh;
+    height: 85vh;
+    height: 85dvh;
     z-index: 100;
     background: #1e1e1e;
     padding: 0;
     border-radius: 16px 16px 0 0;
     overflow: hidden;
     box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
-    justify-content: stretch;
     display: ${(props) => (props.$showOnMobile ? 'flex' : 'none')};
   }
 `;
