@@ -22,6 +22,10 @@ import {
   AgencyLink,
   AgencyLinks,
   AgencyName,
+  AlgoGrid,
+  AlgoIcon,
+  AlgoItem,
+  AlgoName,
   ButtonRow,
   CopyButton,
   DangerButton,
@@ -327,6 +331,45 @@ export default function StepResult({
           <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             {deepfakeData.message as string}
           </div>
+
+          {/* 6가지 알고리즘 검증 */}
+          {Array.isArray(deepfakeData.algorithmChecks) &&
+            (deepfakeData.algorithmChecks as Array<{ name: string; passed: boolean; score: number; description: string }>).length > 0 && (
+              <>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '16px', marginBottom: '4px' }}>
+                  알고리즘 검증
+                </div>
+                <AlgoGrid>
+                  {(deepfakeData.algorithmChecks as Array<{ name: string; passed: boolean; score: number; description: string }>).map((check) => {
+                    const labels: Record<string, string> = {
+                      frequency_analysis: '주파수 분석',
+                      skin_texture: '피부 텍스처',
+                      color_consistency: '색상 일관성',
+                      edge_artifacts: '경계 아티팩트',
+                      noise_pattern: '노이즈 패턴',
+                      compression_artifacts: '압축 패턴',
+                      ai_generated: 'AI 생성 감지',
+                    };
+                    return (
+                      <AlgoItem key={check.name} $passed={check.passed}>
+                        <AlgoIcon $passed={check.passed}>
+                          {check.passed ? (
+                            <svg viewBox="0 0 24 24" fill="none">
+                              <path d="M20 6L9 17l-5-5" />
+                            </svg>
+                          ) : (
+                            <svg viewBox="0 0 24 24" fill="none">
+                              <path d="M18 6L6 18M6 6l12 12" />
+                            </svg>
+                          )}
+                        </AlgoIcon>
+                        <AlgoName>{labels[check.name] || check.name}</AlgoName>
+                      </AlgoItem>
+                    );
+                  })}
+                </AlgoGrid>
+              </>
+            )}
         </Section>
       )}
 

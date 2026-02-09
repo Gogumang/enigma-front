@@ -1083,3 +1083,50 @@ export const ReverseSearchName = styled.span`
   font-weight: 600;
   color: var(--text-primary);
 `;
+
+// ==================== Algorithm Checks (Deepfake) ====================
+
+export const AlgoGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+
+  @media (max-width: 360px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const AlgoItem = styled.div<{ $passed: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: ${(p) => (p.$passed ? 'var(--bg-secondary)' : '#fee2e2')};
+  border: 1px solid ${(p) => (p.$passed ? 'var(--border-color)' : '#fecaca')};
+`;
+
+export const AlgoIcon = styled.div<{ $passed: boolean }>`
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: ${(p) => (p.$passed ? '#10b981' : '#ef4444')};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    stroke: #fff;
+    stroke-width: 3;
+  }
+`;
+
+export const AlgoName = styled.div`
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.3;
+`;
