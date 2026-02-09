@@ -49,9 +49,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyIndexRoute = VerifyIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => VerifyRoute,
+  id: '/verify/',
+  path: '/verify/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileSearchIndexRoute = ProfileSearchIndexRouteImport.update({
   id: '/profile-search/',
@@ -69,9 +69,9 @@ const AnalyzeIndexRoute = AnalyzeIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyResultRoute = VerifyResultRouteImport.update({
-  id: '/result',
-  path: '/result',
-  getParentRoute: () => VerifyRoute,
+  id: '/verify/result',
+  path: '/verify/result',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileSearchResultRoute = ProfileSearchResultRouteImport.update({
   id: '/profile-search/result',
@@ -192,9 +192,11 @@ export interface RootRouteChildren {
   AnalyzeIdRoute: typeof AnalyzeIdRoute
   ImageSearchResultRoute: typeof ImageSearchResultRoute
   ProfileSearchResultRoute: typeof ProfileSearchResultRoute
+  VerifyResultRoute: typeof VerifyResultRoute
   AnalyzeIndexRoute: typeof AnalyzeIndexRoute
   ImageSearchIndexRoute: typeof ImageSearchIndexRoute
   ProfileSearchIndexRoute: typeof ProfileSearchIndexRoute
+  VerifyIndexRoute: typeof VerifyIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -236,10 +238,10 @@ declare module '@tanstack/react-router' {
     }
     '/verify/': {
       id: '/verify/'
-      path: '/'
+      path: '/verify'
       fullPath: '/verify/'
       preLoaderRoute: typeof VerifyIndexRouteImport
-      parentRoute: typeof VerifyRoute
+      parentRoute: typeof rootRouteImport
     }
     '/profile-search/': {
       id: '/profile-search/'
@@ -264,10 +266,10 @@ declare module '@tanstack/react-router' {
     }
     '/verify/result': {
       id: '/verify/result'
-      path: '/result'
+      path: '/verify/result'
       fullPath: '/verify/result'
       preLoaderRoute: typeof VerifyResultRouteImport
-      parentRoute: typeof VerifyRoute
+      parentRoute: typeof rootRouteImport
     }
     '/profile-search/result': {
       id: '/profile-search/result'
@@ -302,9 +304,11 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyzeIdRoute: AnalyzeIdRoute,
   ImageSearchResultRoute: ImageSearchResultRoute,
   ProfileSearchResultRoute: ProfileSearchResultRoute,
+  VerifyResultRoute: VerifyResultRoute,
   AnalyzeIndexRoute: AnalyzeIndexRoute,
   ImageSearchIndexRoute: ImageSearchIndexRoute,
   ProfileSearchIndexRoute: ProfileSearchIndexRoute,
+  VerifyIndexRoute: VerifyIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

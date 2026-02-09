@@ -1,254 +1,41 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from '@tanstack/react-router';
-import styled from '@emotion/styled';
 import { useContactsStore } from '@/features/manage-contacts';
 import { localStore } from '@/shared/lib/storage';
-
-const Container = styled.div`
-  min-height: 100vh;
-  background: #f2f4f8;
-`;
-
-const Header = styled.header`
-  position: sticky;
-  top: 0;
-  background: #f2f4f8;
-  z-index: 100;
-  padding: 0 8px;
-`;
-
-const HeaderInner = styled.div`
-  height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-`;
-
-const BackButton = styled(Link)`
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #191f28;
-  border-radius: 12px;
-  text-decoration: none;
-
-  &:active {
-    background: rgba(0, 0, 0, 0.05);
-  }
-`;
-
-const HeaderTitle = styled.h1`
-  font-size: 18px;
-  font-weight: 600;
-  color: #191f28;
-  margin: 0;
-`;
-
-const ProfileSection = styled.div`
-  padding: 20px;
-  text-align: center;
-`;
-
-const Avatar = styled.div`
-  width: 80px;
-  height: 80px;
-  border-radius: 20px;
-  background: #fff;
-  margin: 0 auto 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-
-  svg {
-    width: 80px;
-    height: 80px;
-  }
-`;
-
-const Name = styled.h2`
-  font-size: 22px;
-  font-weight: 700;
-  color: #191f28;
-  margin: 0 0 4px;
-`;
-
-const Meta = styled.span`
-  font-size: 14px;
-  color: #8b95a1;
-`;
-
-const ScoreCard = styled.div`
-  margin: 0 16px 20px;
-  padding: 24px;
-  background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-
-const ScoreHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-`;
-
-const ScoreLabel = styled.span`
-  font-size: 15px;
-  font-weight: 600;
-  color: #191f28;
-`;
-
-const ScoreValue = styled.span<{ $level: string }>`
-  font-size: 28px;
-  font-weight: 700;
-  color: ${props =>
-    props.$level === 'safe' ? '#20c997' :
-    props.$level === 'warning' ? '#ff9500' : '#f04452'};
-`;
-
-const ScoreBar = styled.div`
-  height: 8px;
-  background: #f2f4f6;
-  border-radius: 4px;
-  overflow: hidden;
-`;
-
-const ScoreFill = styled.div<{ $score: number; $level: string }>`
-  height: 100%;
-  width: ${props => props.$score}%;
-  background: ${props =>
-    props.$level === 'safe' ? '#20c997' :
-    props.$level === 'warning' ? '#ff9500' : '#f04452'};
-  border-radius: 4px;
-  transition: width 0.5s ease-out;
-`;
-
-const Section = styled.section`
-  padding: 0 16px 20px;
-`;
-
-const SectionTitle = styled.h3`
-  font-size: 15px;
-  font-weight: 600;
-  color: #191f28;
-  margin: 0 0 12px;
-  padding: 0 4px;
-`;
-
-const AnalysisGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-`;
-
-const AnalysisCard = styled.button`
-  padding: 20px 16px;
-  background: #fff;
-  border: none;
-  border-radius: 16px;
-  text-align: left;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-
-  &:active {
-    background: #f9fafb;
-  }
-`;
-
-const AnalysisIcon = styled.div`
-  font-size: 28px;
-  margin-bottom: 12px;
-`;
-
-const AnalysisTitle = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: #191f28;
-  margin-bottom: 2px;
-`;
-
-const AnalysisDesc = styled.div`
-  font-size: 12px;
-  color: #8b95a1;
-`;
-
-const HistoryCard = styled.div`
-  background: #fff;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-
-const HistoryItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  border-bottom: 1px solid #f2f4f6;
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const HistoryIcon = styled.div<{ $type: string }>`
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: ${props =>
-    props.$type === 'chat' ? '#e8f4ff' :
-    props.$type === 'image' ? '#f3e8ff' : '#fff8e6'};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-`;
-
-const HistoryInfo = styled.div`
-  flex: 1;
-`;
-
-const HistoryTitle = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: #191f28;
-`;
-
-const HistoryDate = styled.div`
-  font-size: 12px;
-  color: #8b95a1;
-`;
-
-const HistoryScore = styled.div<{ $level: string }>`
-  font-size: 15px;
-  font-weight: 700;
-  color: ${props =>
-    props.$level === 'safe' ? '#20c997' :
-    props.$level === 'warning' ? '#ff9500' : '#f04452'};
-`;
-
-const EmptyState = styled.div`
-  padding: 40px 20px;
-  text-align: center;
-  color: #8b95a1;
-  font-size: 14px;
-`;
-
-const DeleteButton = styled.button`
-  display: block;
-  width: calc(100% - 32px);
-  margin: 0 16px 40px;
-  padding: 14px;
-  background: transparent;
-  color: #f04452;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-`;
+import { ChevronLeftIcon } from '@/shared/ui/icons';
+import { useNavigate, useParams } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import {
+  AnalysisCard,
+  AnalysisDesc,
+  AnalysisGrid,
+  AnalysisIcon,
+  AnalysisTitle,
+  Avatar,
+  BackButton,
+  Container,
+  DeleteButton,
+  EmptyState,
+  Header,
+  HeaderInner,
+  HeaderTitle,
+  HistoryCard,
+  HistoryDate,
+  HistoryIcon,
+  HistoryInfo,
+  HistoryItem,
+  HistoryScore,
+  HistoryTitle,
+  Meta,
+  Name,
+  ProfileSection,
+  ScoreBar,
+  ScoreCard,
+  ScoreFill,
+  ScoreHeader,
+  ScoreLabel,
+  ScoreValue,
+  Section,
+  SectionTitle,
+} from './AnalyzePage.styles';
 
 interface Analysis {
   id: string;
@@ -261,8 +48,11 @@ interface Analysis {
 // Messenger Icons
 const KakaoIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#FEE500"/>
-    <path d="M24 12C16.268 12 10 17.037 10 23.304c0 4.022 2.671 7.548 6.69 9.537-.294 1.095-.95 3.529-1.088 4.077-.173.683.25.675.527.49.218-.145 3.472-2.355 4.879-3.314.988.145 2.007.222 3.046.222 7.732 0 14-5.037 14-11.258C38 17.037 31.732 12 24 12z" fill="#3C1E1E"/>
+    <rect width="48" height="48" rx="12" fill="#FEE500" />
+    <path
+      d="M24 12C16.268 12 10 17.037 10 23.304c0 4.022 2.671 7.548 6.69 9.537-.294 1.095-.95 3.529-1.088 4.077-.173.683.25.675.527.49.218-.145 3.472-2.355 4.879-3.314.988.145 2.007.222 3.046.222 7.732 0 14-5.037 14-11.258C38 17.037 31.732 12 24 12z"
+      fill="#3C1E1E"
+    />
   </svg>
 );
 
@@ -270,54 +60,69 @@ const InstagramIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
     <defs>
       <linearGradient id="instaGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#FFDC80"/>
-        <stop offset="25%" stopColor="#FCAF45"/>
-        <stop offset="50%" stopColor="#F77737"/>
-        <stop offset="75%" stopColor="#F56040"/>
-        <stop offset="90%" stopColor="#C13584"/>
-        <stop offset="100%" stopColor="#833AB4"/>
+        <stop offset="0%" stopColor="#FFDC80" />
+        <stop offset="25%" stopColor="#FCAF45" />
+        <stop offset="50%" stopColor="#F77737" />
+        <stop offset="75%" stopColor="#F56040" />
+        <stop offset="90%" stopColor="#C13584" />
+        <stop offset="100%" stopColor="#833AB4" />
       </linearGradient>
     </defs>
-    <rect width="48" height="48" rx="12" fill="url(#instaGrad2)"/>
-    <rect x="12" y="12" width="24" height="24" rx="6" stroke="#fff" strokeWidth="2.5" fill="none"/>
-    <circle cx="24" cy="24" r="5.5" stroke="#fff" strokeWidth="2.5" fill="none"/>
-    <circle cx="31" cy="17" r="2" fill="#fff"/>
+    <rect width="48" height="48" rx="12" fill="url(#instaGrad2)" />
+    <rect x="12" y="12" width="24" height="24" rx="6" stroke="#fff" strokeWidth="2.5" fill="none" />
+    <circle cx="24" cy="24" r="5.5" stroke="#fff" strokeWidth="2.5" fill="none" />
+    <circle cx="31" cy="17" r="2" fill="#fff" />
   </svg>
 );
 
 const TelegramIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#26A5E4"/>
-    <path d="M12.5 23.5l21-9c1-.4 2 .2 1.8 1.3l-3.5 18c-.2 1-1 1.3-1.7.8l-5-3.7-2.4 2.3c-.3.3-.8.2-.9-.2l-1-5.2-5.4-1.8c-1-.3-1-1.5.1-1.9v.4z" fill="#fff"/>
-    <path d="M19.5 31l.5-5 10-9" stroke="#26A5E4" strokeWidth="1.5" strokeLinecap="round"/>
+    <rect width="48" height="48" rx="12" fill="#26A5E4" />
+    <path
+      d="M12.5 23.5l21-9c1-.4 2 .2 1.8 1.3l-3.5 18c-.2 1-1 1.3-1.7.8l-5-3.7-2.4 2.3c-.3.3-.8.2-.9-.2l-1-5.2-5.4-1.8c-1-.3-1-1.5.1-1.9v.4z"
+      fill="#fff"
+    />
+    <path d="M19.5 31l.5-5 10-9" stroke="#26A5E4" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 );
 
 const FacebookIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#1877F2"/>
-    <path d="M26 38V26h4l.5-4.5H26v-3c0-1.3.4-2.2 2.2-2.2H31v-4c-.5-.1-2-.2-3.8-.2-3.8 0-6.4 2.3-6.4 6.6v3.3h-4V26h4v12h5z" fill="#fff"/>
+    <rect width="48" height="48" rx="12" fill="#1877F2" />
+    <path
+      d="M26 38V26h4l.5-4.5H26v-3c0-1.3.4-2.2 2.2-2.2H31v-4c-.5-.1-2-.2-3.8-.2-3.8 0-6.4 2.3-6.4 6.6v3.3h-4V26h4v12h5z"
+      fill="#fff"
+    />
   </svg>
 );
 
 const XIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#000"/>
-    <path d="M27.5 22.1L35.4 13h-1.9l-6.9 7.9L20.8 13H14l8.3 12-8.3 9.5h1.9l7.2-8.3 5.8 8.3H35l-7.5-10.4zm-2.5 2.9l-.8-1.2-6.6-9.4h2.8l5.4 7.7.8 1.2 7 10h-2.8l-5.8-8.3z" fill="#fff"/>
+    <rect width="48" height="48" rx="12" fill="#000" />
+    <path
+      d="M27.5 22.1L35.4 13h-1.9l-6.9 7.9L20.8 13H14l8.3 12-8.3 9.5h1.9l7.2-8.3 5.8 8.3H35l-7.5-10.4zm-2.5 2.9l-.8-1.2-6.6-9.4h2.8l5.4 7.7.8 1.2 7 10h-2.8l-5.8-8.3z"
+      fill="#fff"
+    />
   </svg>
 );
 
 const LineIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#06C755"/>
-    <path d="M38 21.5c0-6.4-6.4-11.5-14.5-11.5S9 15.1 9 21.5c0 5.7 5.1 10.5 11.9 11.4.5.1.8.3.9.6.1.3.1.7 0 1l-.4 2.4c-.1.5.2.8.6.6 3.1-1.8 8.2-4.8 11.1-8.2 2-2.3 4.9-5.4 4.9-7.8z" fill="#fff"/>
+    <rect width="48" height="48" rx="12" fill="#06C755" />
+    <path
+      d="M38 21.5c0-6.4-6.4-11.5-14.5-11.5S9 15.1 9 21.5c0 5.7 5.1 10.5 11.9 11.4.5.1.8.3.9.6.1.3.1.7 0 1l-.4 2.4c-.1.5.2.8.6.6 3.1-1.8 8.2-4.8 11.1-8.2 2-2.3 4.9-5.4 4.9-7.8z"
+      fill="#fff"
+    />
   </svg>
 );
 
 const LinkedInIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
-    <rect width="48" height="48" rx="12" fill="#0A66C2"/>
-    <path d="M15.5 13c1.4 0 2.5 1.1 2.5 2.5S16.9 18 15.5 18 13 16.9 13 15.5 14.1 13 15.5 13zM13 20h5v15h-5V20zm9 0h4.8v2h.1c.7-1.3 2.3-2.5 4.8-2.5 5.1 0 6.1 3.4 6.1 7.8V35h-5v-6.8c0-1.6 0-3.7-2.3-3.7-2.3 0-2.6 1.8-2.6 3.6V35h-5V20z" fill="#fff"/>
+    <rect width="48" height="48" rx="12" fill="#0A66C2" />
+    <path
+      d="M15.5 13c1.4 0 2.5 1.1 2.5 2.5S16.9 18 15.5 18 13 16.9 13 15.5 14.1 13 15.5 13zM13 20h5v15h-5V20zm9 0h4.8v2h.1c.7-1.3 2.3-2.5 4.8-2.5 5.1 0 6.1 3.4 6.1 7.8V35h-5v-6.8c0-1.6 0-3.7-2.3-3.7-2.3 0-2.6 1.8-2.6 3.6V35h-5V20z"
+      fill="#fff"
+    />
   </svg>
 );
 
@@ -325,12 +130,15 @@ const TinderIcon = () => (
   <svg viewBox="0 0 48 48" fill="none">
     <defs>
       <linearGradient id="tinderGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stopColor="#FF6B6B"/>
-        <stop offset="100%" stopColor="#FE3C72"/>
+        <stop offset="0%" stopColor="#FF6B6B" />
+        <stop offset="100%" stopColor="#FE3C72" />
       </linearGradient>
     </defs>
-    <rect width="48" height="48" rx="12" fill="url(#tinderGrad2)"/>
-    <path d="M30.2 18.3c-.2-.3-.6-.2-.8.1-.7.9-1.6 1.5-2.6 1.8-.2.1-.4-.1-.4-.3 0-3.5-2.4-6.4-5.5-7.1-.3-.1-.6.2-.5.5.5 1.8.1 3.7-1.1 5.1-.2.2-.5.1-.6-.1-1-1.3-1.5-2.9-1.5-4.6 0-.3-.4-.5-.6-.2C14.2 16.4 13 20 13 24c0 6.1 4.9 11 11 11s11-4.9 11-11c0-2-.5-3.9-1.5-5.6-.2-.3-.6-.1-.7.2-.4 1.2-1.2 2.2-2.3 2.9-.2.1-.5 0-.6-.2-.4-.8-.6-1.7-.6-2.7-.1-.1-.1-.2-.1-.3z" fill="#fff"/>
+    <rect width="48" height="48" rx="12" fill="url(#tinderGrad2)" />
+    <path
+      d="M30.2 18.3c-.2-.3-.6-.2-.8.1-.7.9-1.6 1.5-2.6 1.8-.2.1-.4-.1-.4-.3 0-3.5-2.4-6.4-5.5-7.1-.3-.1-.6.2-.5.5.5 1.8.1 3.7-1.1 5.1-.2.2-.5.1-.6-.1-1-1.3-1.5-2.9-1.5-4.6 0-.3-.4-.5-.6-.2C14.2 16.4 13 20 13 24c0 6.1 4.9 11 11 11s11-4.9 11-11c0-2-.5-3.9-1.5-5.6-.2-.3-.6-.1-.7.2-.4 1.2-1.2 2.2-2.3 2.9-.2.1-.5 0-.6-.2-.4-.8-.6-1.7-.6-2.7-.1-.1-.1-.2-.1-.3z"
+      fill="#fff"
+    />
   </svg>
 );
 
@@ -366,9 +174,10 @@ export default function AnalyzePage() {
     return 'danger';
   };
 
-  const averageScore = analyses.length > 0
-    ? Math.round(analyses.reduce((sum, a) => sum + a.score, 0) / analyses.length)
-    : 0;
+  const averageScore =
+    analyses.length > 0
+      ? Math.round(analyses.reduce((sum, a) => sum + a.score, 0) / analyses.length)
+      : 0;
 
   const handleDelete = () => {
     if (!confirm('이 분석 대상을 삭제할까요?')) return;
@@ -394,9 +203,7 @@ export default function AnalyzePage() {
         <Header>
           <HeaderInner>
             <BackButton to="/">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
+              <ChevronLeftIcon />
             </BackButton>
           </HeaderInner>
         </Header>
@@ -410,9 +217,7 @@ export default function AnalyzePage() {
       <Header>
         <HeaderInner>
           <BackButton to="/">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+            <ChevronLeftIcon />
           </BackButton>
           <HeaderTitle>분석 현황</HeaderTitle>
         </HeaderInner>
@@ -446,8 +251,15 @@ export default function AnalyzePage() {
         <AnalysisGrid>
           <AnalysisCard onClick={() => handleAnalysis('chat')}>
             <AnalysisIcon>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3182f6" strokeWidth="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#3182f6"
+                strokeWidth="2"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </AnalysisIcon>
             <AnalysisTitle>대화 분석</AnalysisTitle>
@@ -455,10 +267,17 @@ export default function AnalyzePage() {
           </AnalysisCard>
           <AnalysisCard onClick={() => handleAnalysis('image')}>
             <AnalysisIcon>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#a855f7"
+                strokeWidth="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
               </svg>
             </AnalysisIcon>
             <AnalysisTitle>사진/영상 검색</AnalysisTitle>
@@ -466,18 +285,32 @@ export default function AnalyzePage() {
           </AnalysisCard>
           <AnalysisCard onClick={() => handleAnalysis('profile')}>
             <AnalysisIcon>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#f59e0b"
+                strokeWidth="2"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
               </svg>
             </AnalysisIcon>
-            <AnalysisTitle>프로필 검색</AnalysisTitle>
+            <AnalysisTitle>이미지 검색</AnalysisTitle>
             <AnalysisDesc>신원 확인</AnalysisDesc>
           </AnalysisCard>
           <AnalysisCard onClick={() => navigate({ to: '/training' })}>
             <AnalysisIcon>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#20c997" strokeWidth="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#20c997"
+                strokeWidth="2"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </AnalysisIcon>
             <AnalysisTitle>면역 훈련</AnalysisTitle>
@@ -490,35 +323,52 @@ export default function AnalyzePage() {
         <SectionTitle>분석 기록</SectionTitle>
         {analyses.length > 0 ? (
           <HistoryCard>
-            {analyses.map(analysis => (
+            {analyses.map((analysis) => (
               <HistoryItem key={analysis.id}>
                 <HistoryIcon $type={analysis.type}>
                   {analysis.type === 'chat' ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3182f6" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#3182f6"
+                      strokeWidth="2"
+                    >
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                     </svg>
                   ) : analysis.type === 'image' ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                      <circle cx="8.5" cy="8.5" r="1.5"/>
-                      <polyline points="21 15 16 10 5 21"/>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#a855f7"
+                      strokeWidth="2"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
                     </svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                      <circle cx="12" cy="7" r="4"/>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth="2"
+                    >
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
                     </svg>
                   )}
                 </HistoryIcon>
                 <HistoryInfo>
                   <HistoryTitle>{analysis.summary}</HistoryTitle>
-                  <HistoryDate>
-                    {new Date(analysis.date).toLocaleDateString('ko-KR')}
-                  </HistoryDate>
+                  <HistoryDate>{new Date(analysis.date).toLocaleDateString('ko-KR')}</HistoryDate>
                 </HistoryInfo>
-                <HistoryScore $level={getLevel(analysis.score)}>
-                  {analysis.score}점
-                </HistoryScore>
+                <HistoryScore $level={getLevel(analysis.score)}>{analysis.score}점</HistoryScore>
               </HistoryItem>
             ))}
           </HistoryCard>
@@ -529,9 +379,7 @@ export default function AnalyzePage() {
         )}
       </Section>
 
-      <DeleteButton onClick={handleDelete}>
-        분석 대상 삭제
-      </DeleteButton>
+      <DeleteButton onClick={handleDelete}>분석 대상 삭제</DeleteButton>
     </Container>
   );
 }

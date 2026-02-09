@@ -1,222 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import styled from '@emotion/styled';
 import { PageLayout } from '@/shared/ui';
+import { SearchIcon } from '@/shared/ui/icons';
 import { memoryStore } from '@/shared/lib/storage';
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const UploadedImageWrapper = styled.div`
-  position: relative;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-`;
-
-const UploadedImage = styled.img`
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  display: block;
-`;
-
-
-const DetailCard = styled.div`
-  background: #fff;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-
-const DetailItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f2f4f6;
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const DetailLabel = styled.div`
-  font-size: 14px;
-  color: #6b7684;
-`;
-
-const DetailValue = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  color: #191f28;
-`;
-
-const SectionTitle = styled.div`
-  font-size: 15px;
-  font-weight: 600;
-  color: #191f28;
-  margin-bottom: 12px;
-  padding: 0 4px;
-`;
-
-const ImageGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-`;
-
-const ImageCard = styled.a`
-  display: block;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #f8f9fa;
-  text-decoration: none;
-  transition: transform 0.2s;
-
-  &:active {
-    transform: scale(0.98);
-  }
-`;
-
-const ImageThumbnail = styled.img`
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-`;
-
-const ImagePlaceholder = styled.div`
-  width: 100%;
-  aspect-ratio: 1;
-  background: linear-gradient(135deg, #e5e8eb, #d1d5db);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-`;
-
-const ProfileCard = styled.a`
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: #fff;
-  border-radius: 14px;
-  text-decoration: none;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  transition: all 0.2s;
-
-  &:active {
-    transform: scale(0.99);
-    background: #fafbfc;
-  }
-`;
-
-const ProfileImage = styled.img`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #e5e8eb;
-`;
-
-const ProfileInfo = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-const ProfileName = styled.div`
-  font-size: 15px;
-  font-weight: 600;
-  color: #191f28;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const ProfileUsername = styled.div`
-  font-size: 13px;
-  color: #8b95a1;
-`;
-
-const MatchBadge = styled.span<{ $score: number }>`
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  background: ${props =>
-    props.$score >= 80 ? '#ffebee' :
-    props.$score >= 50 ? '#fff8e6' : '#e8f7f0'};
-  color: ${props =>
-    props.$score >= 80 ? '#f04452' :
-    props.$score >= 50 ? '#ff9500' : '#20c997'};
-`;
-
-const ReverseSearchSection = styled.div`
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-`;
-
-const ReverseSearchGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-`;
-
-const ReverseSearchLink = styled.a`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  text-decoration: none;
-  transition: all 0.2s;
-
-  &:active {
-    background: #e5e8eb;
-  }
-`;
-
-const ReverseSearchIcon = styled.span`
-  font-size: 20px;
-`;
-
-const ReverseSearchName = styled.span`
-  font-size: 13px;
-  font-weight: 600;
-  color: #191f28;
-`;
-
-const BackButton = styled.button`
-  width: 100%;
-  padding: 16px;
-  background: #3182f6;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 8px;
-
-  &:active {
-    background: #1b64da;
-  }
-`;
-
-const EmptyState = styled.div`
-  text-align: center;
-  padding: 60px 20px;
-  color: #6b7684;
-`;
+import {
+  Container,
+  UploadedImageWrapper,
+  UploadedImage,
+  DetailCard,
+  DetailItem,
+  DetailLabel,
+  DetailValue,
+  SectionTitle,
+  ImageGrid,
+  ImageCard,
+  ImageThumbnail,
+  ImagePlaceholder,
+  ProfileCard,
+  ProfileImage,
+  ProfileInfo,
+  ProfileName,
+  ProfileUsername,
+  MatchBadge,
+  ReverseSearchSection,
+  ReverseSearchGrid,
+  ReverseSearchLink,
+  ReverseSearchIcon,
+  ReverseSearchName,
+  BackButton,
+  EmptyState,
+} from './ProfileSearchResultPage.styles';
 
 interface WebImageResult {
   title: string;
@@ -277,15 +90,12 @@ export default function ProfileSearchResultPage() {
       <PageLayout title="검색 결과">
         <EmptyState>
           <div style={{ marginBottom: '16px' }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6b7684" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
+            <SearchIcon size={48} color="#6b7684" />
           </div>
           <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>검색 결과가 없습니다</div>
-          <div style={{ fontSize: '14px' }}>먼저 프로필을 검색해주세요</div>
+          <div style={{ fontSize: '14px' }}>먼저 이미지를 검색해주세요</div>
           <BackButton onClick={() => navigate({ to: '/profile-search' })} style={{ marginTop: '24px' }}>
-            프로필 검색하기
+            이미지 검색하기
           </BackButton>
         </EmptyState>
       </PageLayout>
@@ -389,7 +199,7 @@ export default function ProfileSearchResultPage() {
         )}
 
         <BackButton onClick={() => navigate({ to: '/profile-search' })}>
-          다른 프로필 검색하기
+          다른 이미지 검색하기
         </BackButton>
       </Container>
     </PageLayout>

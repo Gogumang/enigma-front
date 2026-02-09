@@ -1,1 +1,1 @@
-export { useScamReport, useCheckExistingReports } from './api/reportApi';
+export { useScamReport, useCheckExistingReports, useReportGuide, type ReportGuideData } from './api/reportApi';

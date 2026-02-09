@@ -73,3 +73,63 @@ export function useCheckExistingReports() {
     },
   });
 }
+
+// ==================== Report Guide ====================
+
+interface ReportGuideRequest {
+  analysisResults: Record<string, unknown>;
+  damageAmount?: number;
+  damageDate?: string;
+  userDescription?: string;
+}
+
+interface EmergencyAction {
+  action: string;
+  contact: string;
+  isUrgent: boolean;
+  deadlineHours: number | null;
+  goldenTimeWarning: string | null;
+}
+
+interface ReportingStep {
+  step: number;
+  title: string;
+  description: string;
+  url: string | null;
+  tip: string | null;
+}
+
+interface Agency {
+  name: string;
+  phone: string;
+  url: string;
+}
+
+interface EvidenceSummary {
+  category: string;
+  riskLevel: string;
+  summary: string;
+}
+
+export interface ReportGuideData {
+  scamType: string;
+  scamTypeLabel: string;
+  dangerLevel: string;
+  aiReportDraft: string;
+  emergencyActions: EmergencyAction[];
+  reportingSteps: ReportingStep[];
+  agencies: Agency[];
+  evidenceSummary: EvidenceSummary[];
+}
+
+export function useReportGuide() {
+  return useMutation({
+    mutationFn: async (req: ReportGuideRequest): Promise<ReportGuideData> => {
+      const response = await apiClient.post<{ success: boolean; data?: ReportGuideData; error?: string }>(
+        '/api/report/guide', req
+      );
+      if (response.success && response.data) return response.data;
+      throw new Error(response.error || '신고 가이드 생성 실패');
+    },
+  });
+}
